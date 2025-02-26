@@ -41,7 +41,7 @@ export async function buildScene(container: HTMLElement, extent: Extent) {
   const width = container.clientWidth;
   const height = container.clientHeight;
 
-  camera = new PerspectiveCamera(30, width / height, 0.1, size * 100);
+  camera = new PerspectiveCamera(30, width / height, 0.1, size * 25);
   camera.position.set(center.x, center.y, size * 5);
   camera.lookAt(center);
 
@@ -51,11 +51,12 @@ export async function buildScene(container: HTMLElement, extent: Extent) {
 
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(width, height);
-  //renderer.autoClear = false;
-  //renderer.setClearColor(0x000000, 0.0); // second param is opacity, 0 => transparent
-
-  // enable clipping
   renderer.localClippingEnabled = true;
+  // renderer.autoClear = false;
+  // renderer.setClearColor(0x000000, 0.0); // second param is opacity, 0 => transparent
+  renderer.setAnimationLoop(animate);
+  window.addEventListener("resize", () => onWindowResize(container));
+
   container.appendChild(renderer.domElement);
 
   controls = new OrbitControls(camera, renderer.domElement);
@@ -71,17 +72,6 @@ export async function buildScene(container: HTMLElement, extent: Extent) {
   // const queryString = window.location.search;
   // const urlParams = new URLSearchParams(queryString);
   // const modelid = parseInt(urlParams.get("model_id") ?? "20", 10);
-
-  renderer.setAnimationLoop(animate);
-
-  window.addEventListener("resize", () => onWindowResize(container));
-
-  const testCube = new Mesh(
-    new BoxGeometry(size * 0.1, size * 0.1, size * 0.1),
-    new MeshBasicMaterial({ color: 0xff0000 })
-  );
-  testCube.position.copy(center);
-  scene.add(testCube);
 
   return { renderer, scene, camera };
 }
@@ -99,6 +89,7 @@ function onWindowResize(container: HTMLElement) {
 
 function animate() {
   renderer.render(scene, camera);
+
   // required if controls.enableDamping or controls.autoRotate are set to true
   controls.update();
 }

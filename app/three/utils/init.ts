@@ -21,8 +21,8 @@ export async function init(container: HTMLElement) {
   const { renderer, scene, camera } = await buildScene(container, extent);
   const meshes = await buildMeshes(mappedFeatures);
 
-  //   const mappedFeaturesGroup = new Group();
-  //   mappedFeaturesGroup.add(...meshes);
-  // scene.add(mappedFeaturesGroup);
-  scene.add(meshes[0]);
+  const mappedFeaturesGroup = new Group();
+  mappedFeaturesGroup.add(...meshes);
+  scene.add(mappedFeaturesGroup);
+  // scene.add(meshes[8]);
 }

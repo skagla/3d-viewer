@@ -2,11 +2,14 @@ import {
   BufferAttribute,
   BufferGeometry,
   DoubleSide,
+  FrontSide,
   Group,
   Mesh,
-  MeshBasicMaterial,
   MeshStandardMaterial,
 } from "three";
+
+import { uniforms } from "./uniforms";
+import { shader } from "./shader";
 
 import { fetchTriangleIndices } from "./fetch-triangle-indices";
 import { fetchVertices } from "./fetch-vertices";
@@ -39,17 +42,23 @@ async function buildMesh(layerData: MappedFeature) {
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
 
-  const material = new MeshStandardMaterial(
-    {
-      color: color,
-      metalness: 0.1,
-      roughness: 0.75,
-      flatShading: true,
-      side: DoubleSide,
-      // wireframe: false,
-    }
-    // this.uniforms.clipping
-  );
+  const material = new MeshStandardMaterial({
+    color: color,
+    metalness: 0.1,
+    roughness: 0.75,
+    flatShading: true,
+    side: FrontSide,
+    wireframe: false,
+  });
+
+  // material.onBeforeCompile = (materialShader) => {
+  //   materialShader.uniforms.clippingLow = uniforms.clipping.clippingLow;
+  //   materialShader.uniforms.clippingHigh = uniforms.clipping.clippingHigh;
+  //   materialShader.uniforms.clippingScale = uniforms.clipping.clippingScale;
+
+  //   materialShader.vertexShader = shader.vertexMeshStandard;
+  //   materialShader.fragmentShader = shader.fragmentClippingMeshStandard;
+  // };
 
   const mesh = new Mesh(geometry, material);
   mesh.name = name;
