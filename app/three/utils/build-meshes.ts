@@ -6,6 +6,10 @@ import {
   Group,
   Mesh,
   MeshStandardMaterial,
+  Plane,
+  PlaneHelper,
+  Scene,
+  Vector3,
 } from "three";
 
 import { uniforms } from "./uniforms";
@@ -22,7 +26,7 @@ interface MappedFeature {
   preview: { legend_color: string; legend_text: string };
 }
 
-async function buildMesh(layerData: MappedFeature) {
+async function buildMesh(layerData: MappedFeature, clippingPlanes: Plane[]) {
   const color = `#${layerData.preview.legend_color}`;
   const name = layerData.preview.legend_text;
   const geomId = layerData.featuregeom_id.toString();
@@ -47,8 +51,10 @@ async function buildMesh(layerData: MappedFeature) {
     metalness: 0.1,
     roughness: 0.75,
     flatShading: true,
-    side: FrontSide,
+    side: DoubleSide,
     wireframe: false,
+    clippingPlanes: clippingPlanes,
+    clipIntersection: true,
   });
 
   // material.onBeforeCompile = (materialShader) => {
@@ -66,20 +72,20 @@ async function buildMesh(layerData: MappedFeature) {
   mesh.castShadow = true;
   mesh.receiveShadow = true;
 
-  // modelNode should be a THREE.Group object where all the model data gets added to
-  // in the original code modelNode is a direct reference to a THREE.Scene
-  // if (modelNode) {
-  //   modelNode.add(mesh);
-  // }
   return mesh;
 }
 
-export async function buildMeshes(mappedFeatures: MappedFeature[]) {
+export async function buildMeshes(
+  mappedFeatures: MappedFeature[],
+  clippingPlanes: Plane[]
+) {
   const meshes = [];
   for (let i = 0; i < mappedFeatures.length; i++) {
     const layerData = mappedFeatures[i];
-    const mesh = await buildMesh(layerData);
-    meshes.push(mesh);
+    if (layerData.name !== "Topography") {
+      const mesh = await buildMesh(layerData, clippingPlanes);
+      meshes.push(mesh);
+    }
   }
 
   return meshes;

@@ -1,0 +1,91 @@
+import {
+  CanvasTexture,
+  GridHelper,
+  Sprite,
+  SpriteMaterial,
+  Vector3,
+  Vector4,
+} from "three";
+import { Extent } from "./build-scene";
+import { getCenter3D } from "./utils";
+
+export function buildGrid(extent: Extent) {
+  const center = getCenter3D(extent);
+  // Calculate the width and height of the grid
+  const gridWidth = extent.xmax - extent.xmin;
+  const gridHeight = extent.ymax - extent.ymin;
+
+  // Decide on the number of divisions (e.g., 20 divisions along each axis)
+  const divisions = 20;
+
+  // Create a grid helper with the calculated grid size and divisions
+  const gridHelper = new GridHelper(Math.max(gridWidth, gridHeight), divisions);
+
+  // Position the grid in the scene to match the given extent
+  gridHelper.position.set(center.x, center.y, 0); // Center the grid at the midpoint
+
+  // Rotate the grid if needed to align with the world coordinates
+  gridHelper.rotation.x = Math.PI / 2; // Rotate to align with the XY plane
+
+  // Retrieve the geometry of the grid helper
+  const geometry = gridHelper.geometry;
+
+  const positionAttr = geometry.getAttribute("position");
+  const startingPointsHorizontal = [];
+  const startingPointsVertical = [];
+  for (let i = 0; i < positionAttr.count; i++) {
+    const x = positionAttr.getX(i);
+    const z = positionAttr.getZ(i);
+    const v = new Vector4(x + center.x, z + center.y, 0, 1);
+
+    if (i % 4 === 0 && i > 4) {
+      startingPointsVertical.push(v);
+    } else if (i % 2 == 0) {
+      startingPointsHorizontal.push(v);
+    }
+  }
+
+  const annotations = [];
+  for (let point of startingPointsHorizontal) {
+    const label = createLabel(`${point.x.toFixed(2)}`, point);
+    annotations.push(label);
+  }
+
+  for (let point of startingPointsVertical) {
+    const label = createLabel(`${point.y.toFixed(2)}`, point);
+    annotations.push(label);
+  }
+
+  return { gridHelper, annotations };
+}
+
+// Function to create annotation (sprite with text)
+function createLabel(text: string, position: Vector4) {
+  const spriteMaterial = new SpriteMaterial({
+    map: new CanvasTexture(generateTextCanvas(text)), // Create text texture
+    transparent: true,
+  });
+  const sprite = new Sprite(spriteMaterial);
+  sprite.position.set(position.x, position.y, position.z);
+  sprite.scale.set(10000, 5000, 1); // Scale the sprite to make the text readable
+  return sprite;
+}
+
+// Function to generate a text canvas for the annotation
+function generateTextCanvas(text: string) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  if (context) {
+    // Set a background color for the canvas to make it visible
+    canvas.width = 800; // Set a fixed width for the canvas
+    canvas.height = 160; // Set a fixed height for the canvas
+
+    // Set the text style
+    context.font = "45px Arial";
+    context.fillStyle = "black"; // Text color
+    context.fillText(text, 400, 80); // Draw the text on the canvas
+  }
+
+  return canvas;
+}

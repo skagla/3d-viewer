@@ -1,8 +1,10 @@
-import { Group, Vector3 } from "three";
+import { AxesHelper, Group } from "three";
 import { buildMeshes } from "./build-meshes";
 import { Extent, buildScene } from "./build-scene";
 import { getMetadata } from "./get-metadata";
 import { MODEL_ID, SERVICE_URL } from "../config";
+import { createClippingPlane } from "./build-clipping-plane";
+import { buildGrid } from "./build-grid";
 
 export async function init(container: HTMLElement) {
   const modelData = await getMetadata(SERVICE_URL + MODEL_ID);
@@ -18,11 +20,31 @@ export async function init(container: HTMLElement) {
     zmax: modelarea.z.max,
   };
 
-  const { renderer, scene, camera } = await buildScene(container, extent);
-  const meshes = await buildMeshes(mappedFeatures);
+  const { renderer, scene, camera, controls } = await buildScene(
+    container,
+    extent
+  );
 
+  const { planeMesh, plane } = createClippingPlane(
+    renderer,
+    camera,
+    controls,
+    extent
+  );
+  scene.add(planeMesh);
+
+  const clippingPlanes = [plane];
+
+  const meshes = await buildMeshes(mappedFeatures, clippingPlanes);
   const mappedFeaturesGroup = new Group();
   mappedFeaturesGroup.add(...meshes);
   scene.add(mappedFeaturesGroup);
-  // scene.add(meshes[8]);
+
+  const { gridHelper, annotations } = buildGrid(extent);
+  const annotationsGroup = new Group();
+  annotationsGroup.add(...annotations);
+  scene.add(gridHelper, annotationsGroup);
+
+  //const axesHelper = new AxesHelper(5);
+  //scene.add(axesHelper);
 }
