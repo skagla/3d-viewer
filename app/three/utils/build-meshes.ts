@@ -2,14 +2,9 @@ import {
   BufferAttribute,
   BufferGeometry,
   DoubleSide,
-  FrontSide,
-  Group,
   Mesh,
   MeshStandardMaterial,
   Plane,
-  PlaneHelper,
-  Scene,
-  Vector3,
 } from "three";
 
 import { uniforms } from "./uniforms";
@@ -26,7 +21,7 @@ interface MappedFeature {
   preview: { legend_color: string; legend_text: string };
 }
 
-async function buildMesh(layerData: MappedFeature, clippingPlanes: Plane[]) {
+async function buildMesh(layerData: MappedFeature) {
   const color = `#${layerData.preview.legend_color}`;
   const name = layerData.preview.legend_text;
   const geomId = layerData.featuregeom_id.toString();
@@ -53,7 +48,6 @@ async function buildMesh(layerData: MappedFeature, clippingPlanes: Plane[]) {
     flatShading: true,
     side: DoubleSide,
     wireframe: false,
-    clippingPlanes: clippingPlanes,
     clipIntersection: false,
   });
 
@@ -75,15 +69,12 @@ async function buildMesh(layerData: MappedFeature, clippingPlanes: Plane[]) {
   return mesh;
 }
 
-export async function buildMeshes(
-  mappedFeatures: MappedFeature[],
-  clippingPlanes: Plane[]
-) {
+export async function buildMeshes(mappedFeatures: MappedFeature[]) {
   const meshes = [];
   for (let i = 0; i < mappedFeatures.length; i++) {
     const layerData = mappedFeatures[i];
     if (layerData.name !== "Topography") {
-      const mesh = await buildMesh(layerData, clippingPlanes);
+      const mesh = await buildMesh(layerData);
       meshes.push(mesh);
     }
   }

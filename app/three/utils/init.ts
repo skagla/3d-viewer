@@ -25,19 +25,30 @@ export async function init(container: HTMLElement) {
     extent
   );
 
+  // Create the 3D model
+  const meshes = await buildMeshes(mappedFeatures);
+  const model = new Group();
+  model.add(...meshes);
+  model.name = "3d-model";
+  scene.add(model);
+
+  // Create the clipping planes and add them to the scene
   const { planeMeshes, planes } = createClippingPlanes(
     renderer,
     camera,
     controls,
-    extent
+    extent,
+    meshes,
+    scene
   );
   scene.add(...planeMeshes);
 
-  const meshes = await buildMeshes(mappedFeatures, planes);
-  const mappedFeaturesGroup = new Group();
-  mappedFeaturesGroup.add(...meshes);
-  scene.add(mappedFeaturesGroup);
+  // Add clipping planes to the meshes
+  for (let mesh of meshes) {
+    mesh.material.clippingPlanes = planes;
+  }
 
+  // Add a coordinate grid to the scene
   const { gridHelper, annotations } = buildGrid(extent);
   const annotationsGroup = new Group();
   annotationsGroup.add(...annotations);
