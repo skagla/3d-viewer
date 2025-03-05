@@ -405,14 +405,14 @@ function generateCapMeshes(meshes: Mesh[], plane: Plane) {
       const capMesh = new Mesh(geometry, material);
 
       // Offset mesh to avoid flickering
-      const offset = 10;
+      const offset = -1;
       const normal = plane.normal.clone().multiplyScalar(offset);
 
       const positionAttr = capMesh.geometry.attributes.position;
       for (let i = 0; i < positionAttr.count; i++) {
-        const x = positionAttr.getX(i) - normal.x;
-        const y = positionAttr.getY(i) - normal.y;
-        const z = positionAttr.getZ(i) - normal.z;
+        const x = positionAttr.getX(i) + normal.x;
+        const y = positionAttr.getY(i) + normal.y;
+        const z = positionAttr.getZ(i) + normal.z;
         positionAttr.setXYZ(i, x, y, z);
       }
       positionAttr.needsUpdate = true;
@@ -474,49 +474,15 @@ function buildPolygons(edges: Array<[Vector3, Vector3]>): Vector3[][] {
   return polygons;
 }
 
-// Function to triangulate the sliced polygon vertices
 function triangulatePolygon(vertices: Vector3[], plane: Plane) {
-  // Project vertices to the plane
-  const projectedVertices = projectVerticesToPlane(vertices, plane);
-
-  // Sort vertices in counter-clockwise order
-  const sortedVertices = sortVertices(projectedVertices);
-
-  // Convert the sorted 2D vertices back to flat array
-  const flatVertices: number[] = [];
-  sortedVertices.forEach((v) => {
-    flatVertices.push(v.x, v.y);
-  });
-
-  // Use earcut to triangulate the 2D polygon (returns an array of indices)
-  const indices = earcut(flatVertices);
-
-  // Create geometry for the triangulated result
-  const geometry = new BufferGeometry();
-  const positions: number[] = [];
-
-  vertices.forEach((v) => {
-    positions.push(v.x, v.y, v.z);
-  });
-
-  geometry.setAttribute(
-    "position",
-    new BufferAttribute(new Float32Array(positions), 3)
-  );
-  geometry.setIndex(indices);
-
-  return geometry;
-}
-
-function projectVerticesToPlane(vertices: Vector3[], plane: Plane) {
-  // Choose a reference point on the plane (e.g., centroid)
+  // Choose a reference point on the plane (centroid of the vertices)
   const planeOrigin = vertices
-    .reduce((sum, v) => sum.add(v), new Vector3())
+    .reduce((sum, v) => sum.add(v.clone()), new Vector3())
     .divideScalar(vertices.length);
 
-  // Define local 2D coordinate system on the plane
-  const N = plane.normal.clone().normalize();
-  let T = new Vector3(1, 0, 0);
+  // Construct the local 2D coordinate system
+  const N = plane.normal.clone().normalize(); // Plane normal
+  let T = new Vector3(1, 0, 0); // Temporary vector for tangent
 
   // Ensure T is not parallel to N
   if (Math.abs(N.dot(T)) > 0.9) {
@@ -526,29 +492,37 @@ function projectVerticesToPlane(vertices: Vector3[], plane: Plane) {
   const U = new Vector3().crossVectors(N, T).normalize(); // First tangent
   const V = new Vector3().crossVectors(N, U).normalize(); // Second tangent
 
-  // Project each vertex to 2D space in the plane
-  return vertices.map((v) => {
-    const relativePos = v.clone().sub(planeOrigin);
-    return new Vector2(relativePos.dot(U), relativePos.dot(V));
-  });
+  const projectedVertices = vertices.map(
+    (v) =>
+      new Vector2(
+        v.clone().sub(planeOrigin).dot(U),
+        v.clone().sub(planeOrigin).dot(V)
+      )
+  );
+
+  // Prepare flat array for triangulation
+  const flatVertices: number[] = projectedVertices.flatMap((v) => [v.x, v.y]);
+
+  // Perform triangulation
+  const indices = earcut(flatVertices);
+
+  // Create geometry
+  const positions: number[] = vertices.flatMap((v) => [v.x, v.y, v.z]);
+  const geometry = new BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new BufferAttribute(new Float32Array(positions), 3)
+  );
+  geometry.setIndex(indices);
+
+  return geometry;
 }
 
-function sortVertices(vertices: Vector2[]) {
-  const centroid = new Vector2(0, 0);
-
-  // Compute the centroid of the vertices
+// Compute the centroid of a list of 2D vertices
+function computeCentroid(vertices: Vector2[]): Vector2 {
+  const centroid = new Vector2();
   vertices.forEach((v) => centroid.add(v));
-  centroid.divideScalar(vertices.length);
-
-  // Sort vertices by the angle with the centroid
-  vertices.sort((a, b) => {
-    return (
-      Math.atan2(a.y - centroid.y, a.x - centroid.x) -
-      Math.atan2(b.y - centroid.y, b.x - centroid.x)
-    );
-  });
-
-  return vertices;
+  return centroid.divideScalar(vertices.length);
 }
 
 // Function to find the intersection point between an edge and a plane
