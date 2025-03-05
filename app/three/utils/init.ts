@@ -3,7 +3,7 @@ import { buildMeshes } from "./build-meshes";
 import { Extent, buildScene } from "./build-scene";
 import { getMetadata } from "./get-metadata";
 import { MODEL_ID, SERVICE_URL } from "../config";
-import { createClippingPlane } from "./build-clipping-plane";
+import { createClippingPlanes } from "./build-clipping-plane";
 import { buildGrid } from "./build-grid";
 
 export async function init(container: HTMLElement) {
@@ -25,17 +25,15 @@ export async function init(container: HTMLElement) {
     extent
   );
 
-  const { planeMesh, plane } = createClippingPlane(
+  const { planeMeshes, planes } = createClippingPlanes(
     renderer,
     camera,
     controls,
     extent
   );
-  scene.add(planeMesh);
+  scene.add(...planeMeshes);
 
-  const clippingPlanes = [plane];
-
-  const meshes = await buildMeshes(mappedFeatures, clippingPlanes);
+  const meshes = await buildMeshes(mappedFeatures, planes);
   const mappedFeaturesGroup = new Group();
   mappedFeaturesGroup.add(...meshes);
   scene.add(mappedFeaturesGroup);

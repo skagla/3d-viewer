@@ -54,7 +54,7 @@ async function buildMesh(layerData: MappedFeature, clippingPlanes: Plane[]) {
     side: DoubleSide,
     wireframe: false,
     clippingPlanes: clippingPlanes,
-    clipIntersection: true,
+    clipIntersection: false,
   });
 
   // material.onBeforeCompile = (materialShader) => {

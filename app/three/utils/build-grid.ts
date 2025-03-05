@@ -3,11 +3,15 @@ import {
   GridHelper,
   Sprite,
   SpriteMaterial,
-  Vector3,
   Vector4,
 } from "three";
 import { Extent } from "./build-scene";
 import { getCenter3D } from "./utils";
+
+enum Orientation {
+  Horizontal,
+  Vertical,
+}
 
 export function buildGrid(extent: Extent) {
   const center = getCenter3D(extent);
@@ -38,7 +42,7 @@ export function buildGrid(extent: Extent) {
     const z = positionAttr.getZ(i);
     const v = new Vector4(x + center.x, z + center.y, 0, 1);
 
-    if (i % 4 === 0 && i > 4) {
+    if (i % 4 === 0) {
       startingPointsVertical.push(v);
     } else if (i % 2 == 0) {
       startingPointsHorizontal.push(v);
@@ -47,12 +51,20 @@ export function buildGrid(extent: Extent) {
 
   const annotations = [];
   for (let point of startingPointsHorizontal) {
-    const label = createLabel(`${point.x.toFixed(2)}`, point);
+    const label = createLabel(
+      `${point.x.toFixed(2)}`,
+      point,
+      Orientation.Horizontal
+    );
     annotations.push(label);
   }
 
   for (let point of startingPointsVertical) {
-    const label = createLabel(`${point.y.toFixed(2)}`, point);
+    const label = createLabel(
+      `${point.y.toFixed(2)}`,
+      point,
+      Orientation.Vertical
+    );
     annotations.push(label);
   }
 
@@ -60,31 +72,39 @@ export function buildGrid(extent: Extent) {
 }
 
 // Function to create annotation (sprite with text)
-function createLabel(text: string, position: Vector4) {
+function createLabel(
+  text: string,
+  position: Vector4,
+  orientation: Orientation
+) {
   const spriteMaterial = new SpriteMaterial({
-    map: new CanvasTexture(generateTextCanvas(text)), // Create text texture
+    map: new CanvasTexture(generateTextCanvas(text, orientation)), // Create text texture
     transparent: true,
   });
   const sprite = new Sprite(spriteMaterial);
   sprite.position.set(position.x, position.y, position.z);
-  sprite.scale.set(10000, 5000, 1); // Scale the sprite to make the text readable
+  sprite.scale.set(5000, 2500, 1); // Scale the sprite to make the text readable
   return sprite;
 }
 
 // Function to generate a text canvas for the annotation
-function generateTextCanvas(text: string) {
+function generateTextCanvas(text: string, orientation: Orientation) {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
 
   if (context) {
-    // Set a background color for the canvas to make it visible
-    canvas.width = 800; // Set a fixed width for the canvas
-    canvas.height = 160; // Set a fixed height for the canvas
+    canvas.width = 800;
+    canvas.height = 160;
 
     // Set the text style
     context.font = "45px Arial";
-    context.fillStyle = "black"; // Text color
-    context.fillText(text, 400, 80); // Draw the text on the canvas
+    context.fillStyle = "black";
+
+    if (orientation === Orientation.Horizontal) {
+      context.fillText(text, 300, 160);
+    } else {
+      context.fillText(text, 100, 90);
+    }
   }
 
   return canvas;
