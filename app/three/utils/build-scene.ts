@@ -17,7 +17,7 @@ let controls: OrbitControls;
 let renderer: WebGLRenderer;
 let camera: PerspectiveCamera;
 let scene: Scene;
-export async function buildScene(container: HTMLElement, extent: Extent) {
+export function buildScene(container: HTMLElement, extent: Extent) {
   const maxSize = getMaxSize(extent);
   const center = getCenter3D(extent);
 
@@ -31,7 +31,7 @@ export async function buildScene(container: HTMLElement, extent: Extent) {
     maxSize * 25
   );
 
-  camera.position.set(center.x, center.y, extent.zmax + 150000);
+  camera.position.set(center.x, center.y - 125000, extent.zmax + 100000);
   camera.lookAt(center);
 
   renderer = new WebGLRenderer({

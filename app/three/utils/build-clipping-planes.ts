@@ -2,7 +2,10 @@ import {
   BufferAttribute,
   BufferGeometry,
   DoubleSide,
+  EdgesGeometry,
   Group,
+  LineBasicMaterial,
+  LineSegments,
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
@@ -15,11 +18,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import {
-  ConvexGeometry,
-  DragControls,
-  OrbitControls,
-} from "three/examples/jsm/Addons.js";
+import { DragControls, OrbitControls } from "three/examples/jsm/Addons.js";
 import { Extent } from "./build-scene";
 import earcut from "earcut";
 
@@ -30,11 +29,19 @@ enum Orientation {
 }
 
 type PlaneMesh = Mesh<PlaneGeometry, MeshBasicMaterial, Object3DEventMap>;
+type EdgeMesh = LineSegments<
+  EdgesGeometry<PlaneGeometry>,
+  LineBasicMaterial,
+  Object3DEventMap
+>;
 type PlaneMeshMap = {
   [key in Orientation]: PlaneMesh;
 };
+type EdgeMashMap = {
+  [key in Orientation]: EdgeMesh;
+};
 
-export function createClippingPlanes(
+export function buildClippingplanes(
   renderer: WebGLRenderer,
   camera: PerspectiveCamera,
   orbitControls: OrbitControls,
@@ -60,13 +67,13 @@ export function createClippingPlanes(
     },
   ];
 
-  const planeMeshes: Mesh<
-    PlaneGeometry,
-    MeshBasicMaterial,
-    Object3DEventMap
-  >[] = [];
+  const planeMeshes: PlaneMesh[] = [];
+  const edgeMeshes: EdgeMesh[] = [];
   const planes: Plane[] = [];
-  let planeMeshMap = {} as Partial<PlaneMeshMap>;
+  const planeMeshMap = {} as Partial<PlaneMeshMap>;
+  const edgeMeshMap = {} as Partial<EdgeMashMap>;
+
+  // Create plane meshes
   for (let p of planesData) {
     let name;
     let planeCenter;
@@ -79,7 +86,7 @@ export function createClippingPlanes(
       planeCenter = new Vector3(
         -p.d,
         extent.ymax - width / 2,
-        extent.zmax - height / 2
+        extent.zmin + height / 2
       );
     } else if (p.orientation === Orientation.Y) {
       name = Orientation.Y;
@@ -88,7 +95,7 @@ export function createClippingPlanes(
       planeCenter = new Vector3(
         extent.xmax - width / 2,
         -p.d,
-        extent.zmax - height / 2
+        extent.zmin + height / 2
       );
     } else {
       name = Orientation.Z;
@@ -101,46 +108,65 @@ export function createClippingPlanes(
       );
     }
 
-    // Visual representation of the clipping plane
-    // Plane is given in Hesse normal form
+    // Plane is given in Hesse normal form: a * x + b* y + c * y + d = 0, where normal = (a, b, c) and d = d
     const plane = new Plane(p.normal, p.d);
 
-    // Dragging Mechanism
+    // Visual representation of the clipping plane
+    const planeGeometry = new PlaneGeometry(width, height);
     const planeMesh = new Mesh(
-      new PlaneGeometry(width, height),
+      planeGeometry,
       new MeshBasicMaterial({
         visible: true,
-        color: 0xff0000,
+        color: 0xa92a4e,
         transparent: true,
         opacity: 0.1,
         side: DoubleSide,
-        clipIntersection: false,
       })
     );
     planeMesh.name = name;
     planeMesh.userData.plane = plane;
 
+    // Create the edges geometry
+    const edgesGeometry = new EdgesGeometry(planeGeometry);
+    const edgesMaterial = new LineBasicMaterial({ color: 0xa92a4e });
+    const edges = new LineSegments(edgesGeometry, edgesMaterial);
+
+    // Translate meshes
     planeMesh.position.set(planeCenter.x, planeCenter.y, planeCenter.z);
+    edges.position.set(planeCenter.x, planeCenter.y, planeCenter.z);
+
+    // Rotate meshes
     if (p.orientation === Orientation.X) {
       planeMesh.rotateY(Math.PI / 2);
       planeMesh.rotateZ(Math.PI / 2);
+      edges.rotateY(Math.PI / 2);
+      edges.rotateZ(Math.PI / 2);
     } else if (p.orientation === Orientation.Y) {
       planeMesh.rotateX(Math.PI / 2);
+      edges.rotateX(Math.PI / 2);
     }
+
     planeMeshes.push(planeMesh);
+    edgeMeshes.push(edges);
     planes.push(plane);
 
     planeMeshMap[p.orientation] = planeMesh;
+    edgeMeshMap[p.orientation] = edges;
   }
 
-  for (let pm of planeMeshes) {
-    // Let clipping planes clip each other
-    const clippingPlanes = planes.filter(
-      (p) => !p.normal.equals(pm.userData.plane.normal)
-    );
+  // Add meshes to the scene
+  const planeMeshGroup = new Group();
+  planeMeshGroup.name = "clipping-planes";
+  planeMeshGroup.add(...planeMeshes);
 
-    pm.material.clippingPlanes = clippingPlanes;
-  }
+  const edgeMeshGroup = new Group();
+  edgeMeshGroup.name = "clipping-plane-edges";
+  edgeMeshGroup.add(...edgeMeshes);
+
+  const clippingBox = new Group();
+  clippingBox.add(planeMeshGroup, edgeMeshGroup);
+  clippingBox.name = "clipping-box";
+  scene.add(clippingBox);
 
   // Enable DragControls for the clipping planes
   const dragControls = new DragControls(
@@ -149,15 +175,17 @@ export function createClippingPlanes(
     renderer.domElement
   );
 
-  dragControls.addEventListener("dragstart", () => {
+  dragControls.addEventListener("dragstart", (event) => {
+    const object = event.object as PlaneMesh;
     // Disable OrbitControls when dragging starts
     orbitControls.enabled = false;
 
     // Remove existing cap meshes
-    let capMeshGroup = scene.getObjectByName("cap-mesh-group");
+    const capMeshGroupName = `cap-mesh-group-${object.name}`;
+    let capMeshGroup = scene.getObjectByName(capMeshGroupName);
     while (capMeshGroup) {
       scene.remove(capMeshGroup);
-      capMeshGroup = scene.getObjectByName("cap-mesh-group");
+      capMeshGroup = scene.getObjectByName(capMeshGroupName);
     }
   });
 
@@ -171,7 +199,9 @@ export function createClippingPlanes(
     const plane = event.object.userData.plane;
     const width = object.geometry.parameters.width;
     const height = object.geometry.parameters.height;
+    let orientation: Orientation;
     if (object.name === Orientation.Z) {
+      orientation = Orientation.Z;
       // Fix rotation of dragged mesh
       event.object.rotation.set(0, 0, 0);
 
@@ -187,14 +217,28 @@ export function createClippingPlanes(
       // Reset position of plane
       plane.constant = newZ;
 
-      // Set position of dragged mesh
+      // Set position of dragged meshes
       object.position.x = extent.xmax - width / 2;
       object.position.y = extent.ymax - height / 2;
       object.position.z = newZ;
 
-      // Resize other meshes
-      resizeMeshes(Orientation.Z, newZ, planeMeshMap as PlaneMeshMap, extent);
+      const edgeMesh = edgeMeshMap[Orientation.Z];
+      if (edgeMesh) {
+        edgeMesh.position.x = extent.xmax - width / 2;
+        edgeMesh.position.y = extent.ymax - height / 2;
+        edgeMesh.position.z = newZ;
+      }
+
+      // Resize other meshes to disable dragging of clipped surface parts
+      resizeMeshes(
+        Orientation.Z,
+        newZ,
+        planeMeshMap as PlaneMeshMap,
+        edgeMeshMap as EdgeMashMap,
+        extent
+      );
     } else if (object.name === Orientation.Y) {
+      orientation = Orientation.Y;
       // Fix rotation of dragged mesh
       event.object.rotation.set(Math.PI / 2, 0, 0);
 
@@ -213,11 +257,26 @@ export function createClippingPlanes(
       // Set position of dragged mesh
       object.position.x = extent.xmax - width / 2;
       object.position.y = newY;
-      object.position.z = extent.zmax - height / 2;
+      object.position.z = extent.zmin + height / 2;
+
+      const edgeMesh = edgeMeshMap[Orientation.Y];
+      if (edgeMesh) {
+        edgeMesh.position.x = extent.xmax - width / 2;
+        edgeMesh.position.y = newY;
+        edgeMesh.position.z = extent.zmin + height / 2;
+      }
 
       // Resize other meshes
-      resizeMeshes(Orientation.Y, newY, planeMeshMap as PlaneMeshMap, extent);
+      resizeMeshes(
+        Orientation.Y,
+        newY,
+        planeMeshMap as PlaneMeshMap,
+        edgeMeshMap as EdgeMashMap,
+        extent
+      );
     } else {
+      orientation = Orientation.X;
+
       // Fix rotation of dragged mesh
       event.object.rotation.set(0, Math.PI / 2, Math.PI / 2);
 
@@ -236,124 +295,178 @@ export function createClippingPlanes(
       // Set position of dragged mesh
       object.position.x = newX;
       object.position.y = extent.ymax - width / 2;
-      object.position.z = extent.zmax - height / 2;
+      object.position.z = extent.zmin + height / 2;
+
+      const edgeMesh = edgeMeshMap[Orientation.X];
+      if (edgeMesh) {
+        edgeMesh.position.x = newX;
+        edgeMesh.position.y = extent.ymax - width / 2;
+        edgeMesh.position.z = extent.zmin + height / 2;
+      }
 
       // Resize other meshes
-      resizeMeshes(Orientation.X, newX, planeMeshMap as PlaneMeshMap, extent);
+      resizeMeshes(
+        Orientation.X,
+        newX,
+        planeMeshMap as PlaneMeshMap,
+        edgeMeshMap as EdgeMashMap,
+        extent
+      );
     }
 
     // Remove existing cap meshes
-    let capMeshGroup = scene.getObjectByName("cap-mesh-group");
+    const capMeshGroupName = `cap-mesh-group-${object.name}`;
+    let capMeshGroup = scene.getObjectByName(capMeshGroupName);
     while (capMeshGroup) {
       scene.remove(capMeshGroup);
-      capMeshGroup = scene.getObjectByName("cap-mesh-group");
+      capMeshGroup = scene.getObjectByName(capMeshGroupName);
     }
 
-    const capMeshes = generateCapMeshes(meshes, plane);
+    // Generate new cap meshes
+    const capMeshes = generateCapMeshes(meshes, plane, planes, orientation);
 
+    // Add new cap meshes
     if (capMeshes.length > 0) {
-      // Add new cap meshes
       const newCapMeshGroup = new Group();
 
       newCapMeshGroup.add(...capMeshes);
-      newCapMeshGroup.name = "cap-mesh-group";
+      newCapMeshGroup.name = capMeshGroupName;
       scene.add(newCapMeshGroup);
     }
   });
 
-  return { planeMeshes, planes };
+  return { planes, dragControls };
 }
 
 function resizeMeshes(
   orientation: Orientation,
   newCoordinate: number,
   planeMeshes: PlaneMeshMap,
+  edgeMeshes: EdgeMashMap,
   extent: Extent
 ) {
   if (orientation === Orientation.X) {
     // Resize y-clipping plane
     let planeMesh = planeMeshes[Orientation.Y];
+    let edgeMesh = edgeMeshes[Orientation.Y];
     let width = extent.xmax - newCoordinate;
     let height = planeMesh.geometry.parameters.height;
+    let planeGeometry = new PlaneGeometry(width, height);
     const y = planeMesh.position.y;
     planeMesh.geometry.dispose();
-    planeMesh.geometry = new PlaneGeometry(width, height);
+    planeMesh.geometry = planeGeometry;
     planeMesh.position.set(
       extent.xmax - width / 2,
       y,
-      extent.zmax - height / 2
+      extent.zmin + height / 2
     );
+    edgeMesh.geometry.dispose();
+    edgeMesh.geometry = new EdgesGeometry(planeGeometry);
+    edgeMesh.position.set(extent.xmax - width / 2, y, extent.zmin + height / 2);
 
     // Resize z-clipping-plane
     planeMesh = planeMeshes[Orientation.Z];
+    edgeMesh = edgeMeshes[Orientation.Z];
     width = extent.xmax - newCoordinate;
     height = planeMesh.geometry.parameters.height;
+    planeGeometry = new PlaneGeometry(width, height);
     const z = planeMesh.position.z;
     planeMesh.geometry.dispose();
-    planeMesh.geometry = new PlaneGeometry(width, height);
+    planeMesh.geometry = planeGeometry;
     planeMesh.position.set(
       extent.xmax - width / 2,
       extent.ymax - height / 2,
       z
     );
+    edgeMesh.geometry.dispose();
+    edgeMesh.geometry = new EdgesGeometry(planeGeometry);
+    edgeMesh.position.set(extent.xmax - width / 2, extent.ymax - height / 2, z);
   } else if (orientation === Orientation.Y) {
     // Resize x-clipping plane
     let planeMesh = planeMeshes[Orientation.X];
+    let edgeMesh = edgeMeshes[Orientation.X];
     let width = extent.ymax - newCoordinate;
     let height = planeMesh.geometry.parameters.height;
+    let planeGeometry = new PlaneGeometry(width, height);
     const x = planeMesh.position.x;
     planeMesh.geometry.dispose();
-    planeMesh.geometry = new PlaneGeometry(width, height);
+    planeMesh.geometry = planeGeometry;
     planeMesh.position.set(
       x,
       extent.ymax - width / 2,
-      extent.zmax - height / 2
+      extent.zmin + height / 2
     );
+    edgeMesh.geometry.dispose();
+    edgeMesh.geometry = new EdgesGeometry(planeGeometry);
+    edgeMesh.position.set(x, extent.ymax - width / 2, extent.zmin + height / 2);
 
     // Resize z-clipping-plane
     planeMesh = planeMeshes[Orientation.Z];
+    edgeMesh = edgeMeshes[Orientation.Z];
     width = planeMesh.geometry.parameters.width;
     height = extent.ymax - newCoordinate;
+    planeGeometry = new PlaneGeometry(width, height);
     const z = planeMesh.position.z;
     planeMesh.geometry.dispose();
-    planeMesh.geometry = new PlaneGeometry(width, height);
+    planeMesh.geometry = planeGeometry;
     planeMesh.position.set(
       extent.xmax - width / 2,
       extent.ymax - height / 2,
       z
     );
+    edgeMesh.geometry.dispose();
+    edgeMesh.geometry = new EdgesGeometry(planeGeometry);
+    edgeMesh.position.set(extent.xmax - width / 2, extent.ymax - height / 2, z);
   } else if (orientation === Orientation.Z) {
     // Resize x-clipping-plane
     let planeMesh = planeMeshes[Orientation.X];
+    let edgeMesh = edgeMeshes[Orientation.X];
     let width = planeMesh.geometry.parameters.width;
     let height = newCoordinate - extent.zmin;
+    let planeGeometry = new PlaneGeometry(width, height);
     const x = planeMesh.position.x;
     planeMesh.geometry.dispose();
-    planeMesh.geometry = new PlaneGeometry(width, height);
+    planeMesh.geometry = planeGeometry;
     planeMesh.position.set(
       x,
       extent.ymax - width / 2,
-      extent.zmax - height / 2
+      extent.zmin + height / 2
     );
+    edgeMesh.geometry.dispose();
+    edgeMesh.geometry = new EdgesGeometry(planeGeometry);
+    edgeMesh.position.set(x, extent.ymax - width / 2, extent.zmin + height / 2);
 
     // Resize y-clipping plane
     planeMesh = planeMeshes[Orientation.Y];
+    edgeMesh = edgeMeshes[Orientation.Y];
     width = planeMesh.geometry.parameters.width;
     height = newCoordinate - extent.zmin;
+    planeGeometry = new PlaneGeometry(width, height);
     const y = planeMesh.position.y;
     planeMesh.geometry.dispose();
-    planeMesh.geometry = new PlaneGeometry(width, height);
+    planeMesh.geometry = planeGeometry;
     planeMesh.position.set(
       extent.xmax - width / 2,
       y,
-      extent.zmax - height / 2
+      extent.zmin + height / 2
     );
+
+    edgeMesh.geometry.dispose();
+    edgeMesh.geometry = new EdgesGeometry(planeGeometry);
+    edgeMesh.position.set(extent.xmax - width / 2, y, extent.zmin + height / 2);
   }
 }
 
 // Extract contour and generate cap
-function generateCapMeshes(meshes: Mesh[], plane: Plane) {
+function generateCapMeshes(
+  meshes: Mesh[],
+  plane: Plane,
+  planes: Plane[],
+  orientation: Orientation
+) {
   const capMeshes: Mesh[] = [];
+
+  // Iterate over the list of geologic meshes
   for (let mesh of meshes) {
     const position = mesh.geometry.attributes.position.array;
     const indices = mesh.geometry.index ? mesh.geometry.index.array : null;
@@ -389,14 +502,20 @@ function generateCapMeshes(meshes: Mesh[], plane: Plane) {
       }
     }
 
+    // Intersection surface can be a multipolygon consisting of disconnected polygons
     const polygons: Vector3[][] = buildPolygons(edges);
 
+    // Clip cap surfaces with clipping planes
+    const clippingPlanes = planes.filter((p) => !p.normal.equals(plane.normal));
+
+    const offset = orientation === Orientation.Z ? 1 : -1;
     const material = new MeshStandardMaterial({
       color: (mesh.material as MeshStandardMaterial).color,
       side: DoubleSide,
       polygonOffset: true,
-      polygonOffsetFactor: -1,
-      polygonOffsetUnits: -1,
+      polygonOffsetFactor: offset,
+      polygonOffsetUnits: offset,
+      clippingPlanes,
     });
 
     const localMeshes = polygons.map((polygon) => {
@@ -405,7 +524,6 @@ function generateCapMeshes(meshes: Mesh[], plane: Plane) {
       const capMesh = new Mesh(geometry, material);
 
       // Offset mesh to avoid flickering
-      const offset = -1;
       const normal = plane.normal.clone().multiplyScalar(offset);
 
       const positionAttr = capMesh.geometry.attributes.position;
@@ -516,13 +634,6 @@ function triangulatePolygon(vertices: Vector3[], plane: Plane) {
   geometry.setIndex(indices);
 
   return geometry;
-}
-
-// Compute the centroid of a list of 2D vertices
-function computeCentroid(vertices: Vector2[]): Vector2 {
-  const centroid = new Vector2();
-  vertices.forEach((v) => centroid.add(v));
-  return centroid.divideScalar(vertices.length);
 }
 
 // Function to find the intersection point between an edge and a plane
