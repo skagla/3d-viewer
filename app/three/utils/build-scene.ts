@@ -65,6 +65,7 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   );
 
   camera.position.set(center.x, center.y - 125000, extent.zmax + 100000);
+  camera.up.set(0, 0, 1);
   camera.lookAt(center);
 
   // Initialize the renderer

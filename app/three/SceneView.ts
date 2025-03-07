@@ -12,9 +12,9 @@ export class SceneView {
   private _dragControls: DragControls;
   private _model: Group;
 
-  constructor(scene: Scene, model: Group, dragControls: DragControls) {
+  constructor(scene: Scene, model: Group, controls: DragControls) {
     this._scene = scene;
-    this._dragControls = dragControls;
+    this._dragControls = controls;
     this._model = model;
   }
 
