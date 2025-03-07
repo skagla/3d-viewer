@@ -128,7 +128,7 @@ export function Form() {
       <div className="w-full flex flex-col gap-3 p-4 border border-gray-200 rounded shadow">
         <Toggle title="Slicing Box" onChange={handleChange} />
         <Toggle
-          title="Coordinate grid"
+          title="Coordinate Grid"
           onChange={handleChangeCG}
           defaultChecked
         />
