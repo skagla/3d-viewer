@@ -567,13 +567,20 @@ function buildPolygons(edges: Array<[Vector3, Vector3]>): Vector3[][] {
 
   while (edgeMap.size > 0) {
     const polygon: Vector3[] = [];
-    const [start, end] = edgeMap.values().next().value; // Take any edge as a start
+
+    // Take any edge as a start
+    const firstEdge = edgeMap.values().next().value;
+
+    if (!firstEdge) {
+      throw new Error("Map is empty: no edges available");
+    }
+
     edgeMap.delete(
-      `${start.x},${start.y},${start.z}-${end.x},${end.y},${end.z}`
+      `${firstEdge.start.x},${firstEdge.start.y},${firstEdge.start.z}-${firstEdge.end.x},${firstEdge.end.y},${firstEdge.end.z}`
     );
 
-    polygon.push(start, end);
-    let lastPoint = end;
+    polygon.push(firstEdge.start, firstEdge.end);
+    let lastPoint = firstEdge.end;
     while (true) {
       let foundNextEdge = false;
 
