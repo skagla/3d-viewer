@@ -6,8 +6,7 @@ import {
   MeshStandardMaterial,
 } from "three";
 
-import { fetchTriangleIndices } from "./fetch-triangle-indices";
-import { fetchVertices } from "./fetch-vertices";
+import { fetchVertices, fetchTriangleIndices } from "./utils";
 import { TRIANGLE_INDICES_URL, VERTICES_URL } from "../config";
 
 interface MappedFeature {
@@ -22,6 +21,9 @@ export async function buildMeshes(mappedFeatures: MappedFeature[]) {
   for (let i = 0; i < mappedFeatures.length; i++) {
     const layerData = mappedFeatures[i];
     const mesh = await buildMesh(layerData);
+    if (layerData.name === "Topography") {
+      mesh.visible = false;
+    }
     meshes.push(mesh);
   }
 

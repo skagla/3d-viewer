@@ -13,7 +13,7 @@ enum Orientation {
   Vertical,
 }
 
-export function buildGrid(extent: Extent) {
+export function buildCoordinateGrid(extent: Extent) {
   const center = getCenter3D(extent);
   // Calculate the width and height of the grid
   const gridWidth = extent.xmax - extent.xmin;
@@ -26,10 +26,10 @@ export function buildGrid(extent: Extent) {
   const gridHelper = new GridHelper(Math.max(gridWidth, gridHeight), divisions);
 
   // Position the grid in the scene to match the given extent
-  gridHelper.position.set(center.x, center.y, 0); // Center the grid at the midpoint
+  gridHelper.position.set(center.x, center.y, 0);
 
-  // Rotate the grid if needed to align with the world coordinates
-  gridHelper.rotation.x = Math.PI / 2; // Rotate to align with the XY plane
+  // Rotate the grid to align with the XY-plane
+  gridHelper.rotation.x = Math.PI / 2;
 
   // Retrieve the geometry of the grid helper
   const geometry = gridHelper.geometry;

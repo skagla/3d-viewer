@@ -1,13 +1,13 @@
-import { AxesHelper, Group, Scene } from "three";
+import { AxesHelper, Group, Mesh, MeshStandardMaterial, Scene } from "three";
 import { buildMeshes } from "./utils/build-meshes";
 import { Extent, buildScene } from "./utils/build-scene";
 import { getMetadata } from "./utils/utils";
 import { MODEL_ID, SERVICE_URL } from "./config";
 import { buildClippingplanes } from "./utils/build-clipping-planes";
-import { buildGrid } from "./utils/build-grid";
+import { buildCoordinateGrid } from "./utils/build-coordinate-grid";
 import { DragControls } from "three/examples/jsm/Addons.js";
 
-export class MapScene {
+export class SceneView {
   private _scene: Scene;
   private _dragControls: DragControls;
   private _model: Group;
@@ -20,7 +20,7 @@ export class MapScene {
 
   static async create(container: HTMLElement, modelId: string) {
     const { scene, model, dragControls } = await init(container, modelId);
-    return new MapScene(scene, model, dragControls);
+    return new SceneView(scene, model, dragControls);
   }
 
   get scene() {
@@ -50,6 +50,21 @@ export class MapScene {
     if (mesh) {
       mesh.visible = !mesh.visible;
     }
+  }
+
+  toggleCoordinateGrid() {
+    const group = this._scene.getObjectByName("coordinate-grid");
+    if (group) {
+      group.visible = !group.visible;
+    }
+  }
+
+  toggleWireFrame() {
+    const model = this._model;
+    model.children.forEach((child) => {
+      const material = (child as Mesh).material as MeshStandardMaterial;
+      material.wireframe = !material.wireframe;
+    });
   }
 }
 
@@ -92,11 +107,11 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   }
 
   // Add a coordinate grid to the scene
-  const { gridHelper, annotations } = buildGrid(extent);
+  const { gridHelper, annotations } = buildCoordinateGrid(extent);
   const annotationsGroup = new Group();
   annotationsGroup.name = "coordinate-grid";
-  annotationsGroup.add(...annotations);
-  scene.add(gridHelper, annotationsGroup);
+  annotationsGroup.add(...annotations, gridHelper);
+  scene.add(annotationsGroup);
 
   //const axesHelper = new AxesHelper(5);
   //scene.add(axesHelper);

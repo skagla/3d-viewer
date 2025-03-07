@@ -166,6 +166,7 @@ export function buildClippingplanes(
   const clippingBox = new Group();
   clippingBox.add(planeMeshGroup, edgeMeshGroup);
   clippingBox.name = "clipping-box";
+  clippingBox.visible = false;
   scene.add(clippingBox);
 
   // Enable DragControls for the clipping planes
@@ -175,18 +176,11 @@ export function buildClippingplanes(
     renderer.domElement
   );
 
-  dragControls.addEventListener("dragstart", (event) => {
-    const object = event.object as PlaneMesh;
+  dragControls.enabled = false;
+
+  dragControls.addEventListener("dragstart", () => {
     // Disable OrbitControls when dragging starts
     orbitControls.enabled = false;
-
-    // Remove existing cap meshes
-    const capMeshGroupName = `cap-mesh-group-${object.name}`;
-    let capMeshGroup = scene.getObjectByName(capMeshGroupName);
-    while (capMeshGroup) {
-      scene.remove(capMeshGroup);
-      capMeshGroup = scene.getObjectByName(capMeshGroupName);
-    }
   });
 
   dragControls.addEventListener("dragend", () => {
@@ -468,77 +462,94 @@ function generateCapMeshes(
 
   // Iterate over the list of geologic meshes
   for (let mesh of meshes) {
-    const position = mesh.geometry.attributes.position.array;
-    const indices = mesh.geometry.index ? mesh.geometry.index.array : null;
-    const edges: Array<[Vector3, Vector3]> = [];
+    // Slice visible meshes only
+    if (mesh.visible) {
+      const position = mesh.geometry.attributes.position.array;
+      const indices = mesh.geometry.index ? mesh.geometry.index.array : null;
+      const edges: Array<[Vector3, Vector3]> = [];
 
-    for (
-      let i = 0;
-      i < (indices ? indices.length : position.length / 3);
-      i += 3
-    ) {
-      const i1 = indices ? indices[i] * 3 : i * 3;
-      const i2 = indices ? indices[i + 1] * 3 : (i + 1) * 3;
-      const i3 = indices ? indices[i + 2] * 3 : (i + 2) * 3;
+      for (
+        let i = 0;
+        i < (indices ? indices.length : position.length / 3);
+        i += 3
+      ) {
+        const i1 = indices ? indices[i] * 3 : i * 3;
+        const i2 = indices ? indices[i + 1] * 3 : (i + 1) * 3;
+        const i3 = indices ? indices[i + 2] * 3 : (i + 2) * 3;
 
-      const v1 = new Vector3(position[i1], position[i1 + 1], position[i1 + 2]);
-      const v2 = new Vector3(position[i2], position[i2 + 1], position[i2 + 2]);
-      const v3 = new Vector3(position[i3], position[i3 + 1], position[i3 + 2]);
+        const v1 = new Vector3(
+          position[i1],
+          position[i1 + 1],
+          position[i1 + 2]
+        );
+        const v2 = new Vector3(
+          position[i2],
+          position[i2 + 1],
+          position[i2 + 2]
+        );
+        const v3 = new Vector3(
+          position[i3],
+          position[i3 + 1],
+          position[i3 + 2]
+        );
 
-      // Check if the triangle is cut by the plane
-      const d1 = plane.distanceToPoint(v1);
-      const d2 = plane.distanceToPoint(v2);
-      const d3 = plane.distanceToPoint(v3);
+        // Check if the triangle is cut by the plane
+        const d1 = plane.distanceToPoint(v1);
+        const d2 = plane.distanceToPoint(v2);
+        const d3 = plane.distanceToPoint(v3);
 
-      // Compute intersection points
-      const intersections = [];
+        // Compute intersection points
+        const intersections = [];
 
-      if (d1 * d2 < 0) intersections.push(intersectEdge(v1, v2, d1, d2));
-      if (d2 * d3 < 0) intersections.push(intersectEdge(v2, v3, d2, d3));
-      if (d3 * d1 < 0) intersections.push(intersectEdge(v3, v1, d3, d1));
+        if (d1 * d2 < 0) intersections.push(intersectEdge(v1, v2, d1, d2));
+        if (d2 * d3 < 0) intersections.push(intersectEdge(v2, v3, d2, d3));
+        if (d3 * d1 < 0) intersections.push(intersectEdge(v3, v1, d3, d1));
 
-      if (intersections.length === 2) {
-        edges.push([intersections[0], intersections[1]]);
+        if (intersections.length === 2) {
+          edges.push([intersections[0], intersections[1]]);
+        }
       }
+
+      // Intersection surface can be a multipolygon consisting of disconnected polygons
+      const polygons: Vector3[][] = buildPolygons(edges);
+
+      // Clip cap surfaces with clipping planes
+      const clippingPlanes = planes.filter(
+        (p) => !p.normal.equals(plane.normal)
+      );
+
+      const offset = orientation === Orientation.Z ? 1 : -1;
+      const material = new MeshStandardMaterial({
+        color: (mesh.material as MeshStandardMaterial).color,
+        side: DoubleSide,
+        polygonOffset: true,
+        polygonOffsetFactor: offset,
+        polygonOffsetUnits: offset,
+        clippingPlanes,
+      });
+
+      const localMeshes = polygons.map((polygon) => {
+        const geometry = triangulatePolygon(polygon, plane);
+
+        const capMesh = new Mesh(geometry, material);
+
+        // Offset mesh to avoid flickering
+        const normal = plane.normal.clone().multiplyScalar(offset);
+
+        const positionAttr = capMesh.geometry.attributes.position;
+        for (let i = 0; i < positionAttr.count; i++) {
+          const x = positionAttr.getX(i) + normal.x;
+          const y = positionAttr.getY(i) + normal.y;
+          const z = positionAttr.getZ(i) + normal.z;
+          positionAttr.setXYZ(i, x, y, z);
+        }
+        positionAttr.needsUpdate = true;
+
+        return capMesh;
+      });
+
+      capMeshes.push(...localMeshes);
     }
-
-    // Intersection surface can be a multipolygon consisting of disconnected polygons
-    const polygons: Vector3[][] = buildPolygons(edges);
-
-    // Clip cap surfaces with clipping planes
-    const clippingPlanes = planes.filter((p) => !p.normal.equals(plane.normal));
-
-    const offset = orientation === Orientation.Z ? 1 : -1;
-    const material = new MeshStandardMaterial({
-      color: (mesh.material as MeshStandardMaterial).color,
-      side: DoubleSide,
-      polygonOffset: true,
-      polygonOffsetFactor: offset,
-      polygonOffsetUnits: offset,
-      clippingPlanes,
-    });
-
-    const localMeshes = polygons.map((polygon) => {
-      const geometry = triangulatePolygon(polygon, plane);
-
-      const capMesh = new Mesh(geometry, material);
-
-      // Offset mesh to avoid flickering
-      const normal = plane.normal.clone().multiplyScalar(offset);
-
-      const positionAttr = capMesh.geometry.attributes.position;
-      for (let i = 0; i < positionAttr.count; i++) {
-        const x = positionAttr.getX(i) + normal.x;
-        const y = positionAttr.getY(i) + normal.y;
-        const z = positionAttr.getZ(i) + normal.z;
-        positionAttr.setXYZ(i, x, y, z);
-      }
-      positionAttr.needsUpdate = true;
-
-      return capMesh;
-    });
-
-    capMeshes.push(...localMeshes);
   }
 
   return capMeshes;

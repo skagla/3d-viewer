@@ -1,15 +1,15 @@
 "use client";
 
 import { useContext, useEffect, useRef } from "react";
-import { MapScene } from "../three/MapScene";
+import { SceneView } from "../three/SceneView";
 import {
-  MapSceneContext,
-  MapSceneContextType,
-} from "../providers/map-scene-provider";
+  SceneViewContext,
+  SceneViewContextType,
+} from "../providers/scene-view-provider";
 
 export function Map() {
   const divRef = useRef<HTMLDivElement>(null);
-  const { setMapScene } = useContext(MapSceneContext) as MapSceneContextType;
+  const { setSceneView } = useContext(SceneViewContext) as SceneViewContextType;
 
   useEffect(() => {
     let ignore = false;
@@ -17,9 +17,9 @@ export function Map() {
 
     async function loadScene() {
       if (divRef.current) {
-        const _mapScene = await MapScene.create(divRef.current, "20");
-        if (_mapScene) {
-          setMapScene(_mapScene);
+        const _sceneView = await SceneView.create(divRef.current, "20");
+        if (_sceneView) {
+          setSceneView(_sceneView);
         }
       }
     }

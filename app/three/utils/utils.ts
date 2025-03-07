@@ -1,5 +1,6 @@
 import { Vector3 } from "three";
 import { Extent } from "./build-scene";
+import { unpackEdges, unpackVertices } from "./parsers";
 
 export function getMaxSize(extent: Extent) {
   return Math.max(
@@ -31,4 +32,25 @@ export async function getMetadata(serviceUrl: string) {
   } else {
     throw new Error("HTTP error status: " + response.status);
   }
+}
+
+export async function request(url: string) {
+  const response = await fetch(url);
+  if (response.ok) {
+    return response.arrayBuffer();
+  } else {
+    throw new Error("HTTP error status: " + response.status);
+  }
+}
+
+export async function fetchTriangleIndices(edgeUrl: string, geomId: string) {
+  const url = edgeUrl + geomId;
+  const buffer = await request(url);
+  return unpackEdges(buffer);
+}
+
+export async function fetchVertices(pointUrl: string, geomId: string) {
+  const url = pointUrl + geomId;
+  const buffer = await request(url);
+  return unpackVertices(buffer);
 }
