@@ -32,7 +32,7 @@ export function unpackVertices(arrayBuffer: ArrayBuffer) {
     ptr += FOURBYTE;
     significantBits = readSignificantBits(dataView, ptr, bytesCount);
     let value = 0.0;
-    for (var j = dim, i = 0; i < pointsCount; j += DIMENSIONS, i++) {
+    for (let j = dim, i = 0; i < pointsCount; j += DIMENSIONS, i++) {
       value = significantBits.readBits(significantBitsCount, 0) | commonBits;
       if (dim === 2) {
         value = value / 100; // z values in pc_patch from DB are multiplied by 100

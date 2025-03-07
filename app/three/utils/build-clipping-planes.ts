@@ -74,7 +74,7 @@ export function buildClippingplanes(
   const edgeMeshMap = {} as Partial<EdgeMashMap>;
 
   // Create plane meshes
-  for (let p of planesData) {
+  for (const p of planesData) {
     let name;
     let planeCenter;
     let width;
@@ -461,7 +461,7 @@ function generateCapMeshes(
   const capMeshes: Mesh[] = [];
 
   // Iterate over the list of geologic meshes
-  for (let mesh of meshes) {
+  for (const mesh of meshes) {
     // Slice visible meshes only
     if (mesh.visible) {
       const position = mesh.geometry.attributes.position.array;
@@ -611,7 +611,7 @@ function triangulatePolygon(vertices: Vector3[], plane: Plane) {
 
   // Construct the local 2D coordinate system
   const N = plane.normal.clone().normalize(); // Plane normal
-  let T = new Vector3(1, 0, 0); // Temporary vector for tangent
+  const T = new Vector3(1, 0, 0); // Temporary vector for tangent
 
   // Ensure T is not parallel to N
   if (Math.abs(N.dot(T)) > 0.9) {

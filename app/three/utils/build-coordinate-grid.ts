@@ -50,7 +50,7 @@ export function buildCoordinateGrid(extent: Extent) {
   }
 
   const annotations = [];
-  for (let point of startingPointsHorizontal) {
+  for (const point of startingPointsHorizontal) {
     const label = createLabel(
       `${point.x.toFixed(2)}`,
       point,
@@ -59,7 +59,7 @@ export function buildCoordinateGrid(extent: Extent) {
     annotations.push(label);
   }
 
-  for (let point of startingPointsVertical) {
+  for (const point of startingPointsVertical) {
     const label = createLabel(
       `${point.y.toFixed(2)}`,
       point,

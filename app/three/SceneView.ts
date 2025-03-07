@@ -1,4 +1,4 @@
-import { AxesHelper, Group, Mesh, MeshStandardMaterial, Scene } from "three";
+import { Group, Mesh, MeshStandardMaterial, Scene } from "three";
 import { buildMeshes } from "./utils/build-meshes";
 import { Extent, buildScene } from "./utils/build-scene";
 import { getMetadata } from "./utils/utils";
@@ -102,7 +102,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   );
 
   // Add clipping planes to the meshes
-  for (let mesh of meshes) {
+  for (const mesh of meshes) {
     mesh.material.clippingPlanes = planes;
   }
 
