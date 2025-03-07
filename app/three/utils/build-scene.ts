@@ -92,6 +92,7 @@ export function buildScene(container: HTMLElement, extent: Extent) {
 
   // Scene will hold all our elements such as objects, cameras and lights
   scene = new Scene();
+  scene.userData.wireframe = false;
 
   // Add lights to the scene
   const lights = buildDefaultLights();

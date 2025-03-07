@@ -22,7 +22,7 @@ import { DragControls, OrbitControls } from "three/examples/jsm/Addons.js";
 import { Extent } from "./build-scene";
 import earcut from "earcut";
 
-enum Orientation {
+export enum Orientation {
   X = "x",
   Y = "y",
   Z = "z",
@@ -317,7 +317,13 @@ export function buildClippingplanes(
     }
 
     // Generate new cap meshes
-    const capMeshes = generateCapMeshes(meshes, plane, planes, orientation);
+    const capMeshes = generateCapMeshes(
+      meshes,
+      plane,
+      planes,
+      orientation,
+      scene
+    );
 
     // Add new cap meshes
     if (capMeshes.length > 0) {
@@ -456,7 +462,8 @@ function generateCapMeshes(
   meshes: Mesh[],
   plane: Plane,
   planes: Plane[],
-  orientation: Orientation
+  orientation: Orientation,
+  scene: Scene
 ) {
   const capMeshes: Mesh[] = [];
 
@@ -526,6 +533,7 @@ function generateCapMeshes(
         polygonOffsetFactor: offset,
         polygonOffsetUnits: offset,
         clippingPlanes,
+        wireframe: scene.userData.wireframe,
       });
 
       const localMeshes = polygons.map((polygon) => {
@@ -560,7 +568,7 @@ function buildPolygons(edges: Array<[Vector3, Vector3]>): Vector3[][] {
   const polygons: Vector3[][] = [];
   const edgeMap = new Map<string, [Vector3, Vector3]>();
 
-  // Populate the edgeMap for fast lookups
+  // Populate the edgeMap
   for (const [v1, v2] of edges) {
     edgeMap.set(`${v1.x},${v1.y},${v1.z}-${v2.x},${v2.y},${v2.z}`, [v1, v2]);
   }
@@ -604,10 +612,12 @@ function buildPolygons(edges: Array<[Vector3, Vector3]>): Vector3[][] {
         }
       }
 
-      if (!foundNextEdge) break; // Stop if no connected edge is found
+      // Stop if no connected edge is found
+      if (!foundNextEdge) break;
     }
 
-    if (polygon.length >= 3) polygons.push(polygon); // Ensure valid polygon with at least 3 vertices
+    // Ensure valid polygon with at least 3 vertices
+    if (polygon.length >= 3) polygons.push(polygon);
   }
 
   return polygons;

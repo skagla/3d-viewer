@@ -3,7 +3,10 @@ import { buildMeshes } from "./utils/build-meshes";
 import { Extent, buildScene } from "./utils/build-scene";
 import { getMetadata } from "./utils/utils";
 import { MODEL_ID, SERVICE_URL } from "./config";
-import { buildClippingplanes } from "./utils/build-clipping-planes";
+import {
+  Orientation,
+  buildClippingplanes,
+} from "./utils/build-clipping-planes";
 import { buildCoordinateGrid } from "./utils/build-coordinate-grid";
 import { DragControls } from "three/examples/jsm/Addons.js";
 
@@ -60,11 +63,30 @@ export class SceneView {
   }
 
   toggleWireFrame() {
+    // Set global wireframe mode data
+    this._scene.userData.wireframe = !this._scene.userData.wireframe;
+
+    // Set wireframe for model
     const model = this._model;
     model.children.forEach((child) => {
       const material = (child as Mesh).material as MeshStandardMaterial;
       material.wireframe = !material.wireframe;
     });
+
+    // Set wireframe for any existing cap meshes
+    for (const key of Object.values(Orientation)) {
+      const name = `cap-mesh-group-${key}`;
+      const capMeshGroup = this._scene.getObjectByName(name);
+
+      if (capMeshGroup) {
+        capMeshGroup.children.forEach((mesh) => {
+          const material = (mesh as Mesh).material as MeshStandardMaterial;
+          if (material) {
+            material.wireframe = !material.wireframe;
+          }
+        });
+      }
+    }
   }
 }
 
