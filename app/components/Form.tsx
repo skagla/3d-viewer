@@ -7,6 +7,7 @@ import {
   SceneViewContextType,
 } from "../providers/scene-view-provider";
 import { Mesh, MeshStandardMaterial } from "three";
+import { scheduler } from "timers/promises";
 
 function Toggle({
   title,
@@ -123,16 +124,23 @@ export function Form() {
     }
   }
 
+  function handleChangeTopography() {
+    if (!sceneView) return;
+
+    sceneView.toggleTopography();
+  }
+
   return (
     <div className="w-full flex flex-col gap-2 overflow-y-auto">
       <div className="w-full flex flex-col gap-3 p-4 border border-gray-200 rounded shadow">
         <Toggle title="Slicing Box" onChange={handleChange} />
+        <Toggle title="Coordinate Grid" onChange={handleChangeCG} />
+        <Toggle title="Wireframe" onChange={handleChangeWireframe} />
         <Toggle
-          title="Coordinate Grid"
-          onChange={handleChangeCG}
+          title="Topography (OSM)"
+          onChange={handleChangeTopography}
           defaultChecked
         />
-        <Toggle title="Wireframe" onChange={handleChangeWireframe} />
         <Accordion title="Layers">
           {
             <div className="flex flex-col gap-2">

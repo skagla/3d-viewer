@@ -1,6 +1,7 @@
 import { Vector3 } from "three";
 import { Extent } from "./build-scene";
-import { unpackEdges, unpackVertices } from "./parsers";
+import { unpackEdges, unpackVertices } from "./decoders";
+import proj4 from "proj4";
 
 export function getMaxSize(extent: Extent) {
   return Math.max(
@@ -53,4 +54,14 @@ export async function fetchVertices(pointUrl: string, geomId: string) {
   const url = pointUrl + geomId;
   const buffer = await request(url);
   return unpackVertices(buffer);
+}
+
+// Transformation from EPSG 3034 to EPSG 3857
+const SOURCE = "EPSG:3034";
+const PROJ_STRING =
+  "+proj=lcc +lat_0=52 +lon_0=10 +lat_1=35 +lat_2=65 +x_0=4000000 +y_0=2800000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs";
+const DEST = "EPSG:3857";
+proj4.defs(SOURCE, PROJ_STRING);
+export function transform(p: number[]) {
+  return proj4(SOURCE, DEST, p);
 }

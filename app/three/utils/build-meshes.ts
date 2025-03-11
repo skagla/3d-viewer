@@ -6,7 +6,7 @@ import {
   MeshStandardMaterial,
 } from "three";
 
-import { fetchVertices, fetchTriangleIndices } from "./utils";
+import { fetchVertices, fetchTriangleIndices, transform } from "./utils";
 import { TRIANGLE_INDICES_URL, VERTICES_URL } from "../config";
 
 interface MappedFeature {
@@ -38,7 +38,14 @@ async function buildMesh(layerData: MappedFeature) {
   const geometry = new BufferGeometry();
   const vertices = await fetchVertices(VERTICES_URL, geomId);
 
-  const positions = new BufferAttribute(vertices, 3);
+  // Transform coordinates to EPSG 3857
+  const vertices3857 = new Float32Array(vertices.length);
+  for (let i = 0; i < vertices.length; i += 3) {
+    const vertex = Array.from(vertices.slice(i, i + 3));
+    vertices3857.set(transform(vertex), i);
+  }
+
+  const positions = new BufferAttribute(vertices3857, 3);
   geometry.setAttribute("position", positions);
 
   const indexArray = await fetchTriangleIndices(TRIANGLE_INDICES_URL, geomId);

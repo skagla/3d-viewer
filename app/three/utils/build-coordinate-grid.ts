@@ -82,7 +82,13 @@ function createLabel(
     transparent: true,
   });
   const sprite = new Sprite(spriteMaterial);
-  sprite.position.set(position.x, position.y, position.z);
+
+  // Set position according to axis orientation
+  if (orientation === Orientation.Horizontal) {
+    sprite.position.set(position.x + 1000, position.y - 1500, position.z + 500);
+  } else {
+    sprite.position.set(position.x, position.y - 500, position.z + 500);
+  }
   sprite.scale.set(5000, 2500, 1); // Scale the sprite to make the text readable
   return sprite;
 }
@@ -101,7 +107,8 @@ function generateTextCanvas(text: string, orientation: Orientation) {
     context.fillStyle = "black";
 
     if (orientation === Orientation.Horizontal) {
-      context.fillText(text, 300, 160);
+      //context.fillText(text, 300, 160);
+      context.fillText(text, 100, 90);
     } else {
       context.fillText(text, 100, 90);
     }

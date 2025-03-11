@@ -1,7 +1,7 @@
 import { Group, Mesh, MeshStandardMaterial, Scene } from "three";
 import { buildMeshes } from "./utils/build-meshes";
 import { Extent, buildScene } from "./utils/build-scene";
-import { getMetadata } from "./utils/utils";
+import { getCenter3D, getMetadata, transform } from "./utils/utils";
 import { MODEL_ID, SERVICE_URL } from "./config";
 import {
   Orientation,
@@ -9,6 +9,7 @@ import {
 } from "./utils/build-clipping-planes";
 import { buildCoordinateGrid } from "./utils/build-coordinate-grid";
 import { DragControls } from "three/examples/jsm/Addons.js";
+import { MapView, OpenStreetMapsProvider } from "geo-three";
 
 export class SceneView {
   private _scene: Scene;
@@ -88,6 +89,13 @@ export class SceneView {
       }
     }
   }
+
+  toggleTopography() {
+    const topo = this._scene.getObjectByName("topography");
+    if (topo) {
+      topo.visible = !topo.visible;
+    }
+  }
 }
 
 async function init(container: HTMLElement, modelId = MODEL_ID) {
@@ -95,13 +103,16 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   const mappedFeatures = modelData.mappedfeatures;
   const modelarea = modelData.modelarea;
 
+  // Transfrom extent to EPSG 3857
+  const pmin = transform([modelarea.x.min, modelarea.y.min, modelarea.z.min]);
+  const pmax = transform([modelarea.x.max, modelarea.y.max, modelarea.z.max]);
   const extent: Extent = {
-    xmin: modelarea.x.min,
-    xmax: modelarea.x.max,
-    ymin: modelarea.y.min,
-    ymax: modelarea.y.max,
-    zmin: modelarea.z.min,
-    zmax: modelarea.z.max,
+    xmin: pmin[0],
+    xmax: pmax[0],
+    ymin: pmin[1],
+    ymax: pmax[1],
+    zmin: pmin[2],
+    zmax: pmax[2],
   };
 
   const { renderer, scene, camera, controls } = buildScene(container, extent);
@@ -133,10 +144,21 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   const annotationsGroup = new Group();
   annotationsGroup.name = "coordinate-grid";
   annotationsGroup.add(...annotations, gridHelper);
+  annotationsGroup.visible = false;
   scene.add(annotationsGroup);
 
   //const axesHelper = new AxesHelper(5);
   //scene.add(axesHelper);
+
+  // Create a map tiles provider object
+  const provider = new OpenStreetMapsProvider();
+
+  // Create the map view of OSM topography
+  const map = new MapView(MapView.PLANAR, provider);
+  map.rotateX(Math.PI / 2);
+  // map.position.setComponent(2, -100);
+  map.name = "topography";
+  scene.add(map);
 
   return { scene, model, dragControls };
 }

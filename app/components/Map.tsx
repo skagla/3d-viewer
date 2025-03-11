@@ -1,11 +1,15 @@
 "use client";
 
 import { useContext, useEffect, useRef } from "react";
-import { SceneView } from "../three/SceneView";
 import {
   SceneViewContext,
   SceneViewContextType,
 } from "../providers/scene-view-provider";
+
+async function lazyLoad() {
+  const { SceneView } = await import("../three/SceneView");
+  return SceneView;
+}
 
 export function Map() {
   const divRef = useRef<HTMLDivElement>(null);
@@ -17,6 +21,7 @@ export function Map() {
 
     async function loadScene() {
       if (divRef.current) {
+        const SceneView = await lazyLoad();
         const _sceneView = await SceneView.create(divRef.current, "20");
         if (_sceneView) {
           setSceneView(_sceneView);
