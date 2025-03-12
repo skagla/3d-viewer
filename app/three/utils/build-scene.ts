@@ -4,38 +4,13 @@ import {
   WebGLRenderer,
   AmbientLight,
   DirectionalLight,
+  Group,
+  Object3D,
+  Vector3,
 } from "three";
 
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { getCenter3D, getMaxSize } from "./utils";
-
-const DEG2RAD = Math.PI / 180;
-function buildDefaultLights() {
-  // Ambient light
-  scene.add(new AmbientLight(0xaaaaaa));
-
-  // Directional lights
-  const opt = {
-    azimuth: 220,
-    altitude: 45,
-  };
-
-  const lambda = (90 - opt.azimuth) * DEG2RAD;
-  const phi = opt.altitude * DEG2RAD;
-
-  const x = Math.cos(phi) * Math.cos(lambda);
-  const y = Math.cos(phi) * Math.sin(lambda);
-  const z = Math.sin(phi);
-
-  const light1 = new DirectionalLight(0xffffff, 0.5);
-  light1.position.set(x, y, z);
-  scene.add(light1);
-
-  // Thin light from the opposite direction
-  const light2 = new DirectionalLight(0xffffff, 0.1);
-  light2.position.set(-x, -y, -z);
-  return light2;
-}
 
 export interface Extent {
   xmin: number;
@@ -90,14 +65,13 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   controls.maxDistance = maxSize * 5;
   controls.update();
 
-  // Scene will hold all our elements such as objects, cameras and lights
+  // Scene
+  // set wireframe to false on initial load
   scene = new Scene();
   scene.userData.wireframe = false;
 
   // Add lights to the scene
-  const lights = buildDefaultLights();
-  lights.name = "lights";
-  scene.add(lights);
+  buildDefaultLights(scene, extent);
 
   return { renderer, scene, camera, controls };
 }
@@ -118,4 +92,34 @@ function animate() {
 
   // required if controls.enableDamping or controls.autoRotate are set to true
   controls.update();
+}
+
+function buildDefaultLights(scene: Scene, extent: Extent) {
+  const center = getCenter3D(extent);
+
+  const lights = [];
+  // Ambient light
+  const ambient = new AmbientLight(0xffffff, 1.0);
+  lights.push(ambient);
+
+  // Directional lights
+  const directionalLight = new DirectionalLight(0xffffff, 1);
+  directionalLight.position.set(
+    center.x,
+    center.y - 200000,
+    extent.zmax + 100000
+  );
+
+  // Create a target for the ligth
+  const target = new Object3D();
+  target.position.set(center.x, center.y, center.z);
+  scene.add(target);
+
+  directionalLight.target = target;
+  lights.push(directionalLight);
+
+  const lightsGroup = new Group();
+  lightsGroup.name = "lights";
+  lightsGroup.add(...lights);
+  scene.add(lightsGroup);
 }

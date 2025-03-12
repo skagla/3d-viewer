@@ -9,7 +9,14 @@ import {
 } from "./utils/build-clipping-planes";
 import { buildCoordinateGrid } from "./utils/build-coordinate-grid";
 import { DragControls } from "three/examples/jsm/Addons.js";
-import { MapView, OpenStreetMapsProvider } from "geo-three";
+import {
+  DebugProvider,
+  HeightDebugProvider,
+  MapTilerProvider,
+  MapView,
+  OpenStreetMapsProvider,
+} from "geo-three";
+import { CustomMapHeightNodeShader } from "./CustomMapHeightNodeShader";
 
 export class SceneView {
   private _scene: Scene;
@@ -98,6 +105,7 @@ export class SceneView {
   }
 }
 
+const MAPTILER_API_KEY = "1JkD1W8u5UM5Tjd8r3Wl ";
 async function init(container: HTMLElement, modelId = MODEL_ID) {
   const modelData = await getMetadata(SERVICE_URL + modelId);
   const mappedFeatures = modelData.mappedfeatures;
@@ -147,16 +155,20 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   annotationsGroup.visible = false;
   scene.add(annotationsGroup);
 
-  //const axesHelper = new AxesHelper(5);
-  //scene.add(axesHelper);
-
   // Create a map tiles provider object
   const provider = new OpenStreetMapsProvider();
+  const heightProvider = new MapTilerProvider(
+    MAPTILER_API_KEY,
+    "tiles",
+    "terrain-rgb",
+    "png"
+  );
 
-  // Create the map view of OSM topography
-  const map = new MapView(MapView.PLANAR, provider);
+  // Create the map view for OSM topography
+  const map = new MapView(MapView.PLANAR, provider, heightProvider);
+  const customNode = new CustomMapHeightNodeShader(null, map);
+  map.setRoot(customNode);
   map.rotateX(Math.PI / 2);
-  // map.position.setComponent(2, -100);
   map.name = "topography";
   scene.add(map);
 
