@@ -118,10 +118,7 @@ export function Form() {
   function handleCheckboxChange(name: string) {
     if (!sceneView) return;
 
-    const mesh = sceneView.model.getObjectByName(name);
-    if (mesh) {
-      mesh.visible = !mesh.visible;
-    }
+    sceneView.toggleLayerVisibility(name);
   }
 
   function handleChangeTopography() {

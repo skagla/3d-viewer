@@ -1,4 +1,4 @@
-import { Group, Mesh, MeshStandardMaterial, Scene } from "three";
+import { Group, Material, Mesh, MeshStandardMaterial, Scene } from "three";
 import { buildMeshes } from "./utils/build-meshes";
 import { Extent, buildScene } from "./utils/build-scene";
 import { getCenter3D, getMetadata, transform } from "./utils/utils";
@@ -12,6 +12,7 @@ import { DragControls } from "three/examples/jsm/Addons.js";
 import {
   DebugProvider,
   HeightDebugProvider,
+  MapHeightNode,
   MapTilerProvider,
   MapView,
   OpenStreetMapsProvider,
@@ -60,6 +61,20 @@ export class SceneView {
     const mesh = this._model.getObjectByName(layerName);
     if (mesh) {
       mesh.visible = !mesh.visible;
+    }
+
+    // Set visibility for any existing cap meshes
+    for (const key of Object.values(Orientation)) {
+      const name = `cap-mesh-group-${key}`;
+      const capMeshGroup = this._scene.getObjectByName(name);
+
+      if (capMeshGroup) {
+        for (const m of capMeshGroup.children) {
+          if (m.name === layerName && m) {
+            m.visible = !m.visible;
+          }
+        }
+      }
     }
   }
 
@@ -166,9 +181,10 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
 
   // Create the map view for OSM topography
   const map = new MapView(MapView.PLANAR, provider, heightProvider);
-  const customNode = new CustomMapHeightNodeShader(null, map);
+  const customNode = new CustomMapHeightNodeShader(undefined, map);
   map.setRoot(customNode);
   map.rotateX(Math.PI / 2);
+
   map.name = "topography";
   scene.add(map);
 

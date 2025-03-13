@@ -7,6 +7,7 @@ import {
   Group,
   Object3D,
   Vector3,
+  HemisphereLight,
 } from "three";
 
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -62,7 +63,8 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(center.x, center.y, center.z); // Focus on the center
   controls.enableDamping = true; // Smooth camera movement
-  controls.maxDistance = maxSize * 5;
+  controls.maxDistance = maxSize * 3;
+  controls.minDistance = maxSize / 5;
   controls.update();
 
   // Scene
@@ -97,17 +99,24 @@ function animate() {
 function buildDefaultLights(scene: Scene, extent: Extent) {
   const center = getCenter3D(extent);
 
+  const lightPosition = {
+    x: center.x,
+    y: center.y - 200000,
+    z: extent.zmax + 100000,
+  };
+
   const lights = [];
+
   // Ambient light
-  const ambient = new AmbientLight(0xffffff, 1.0);
+  const ambient = new AmbientLight(0xffffff, 2);
   lights.push(ambient);
 
   // Directional lights
-  const directionalLight = new DirectionalLight(0xffffff, 1);
+  const directionalLight = new DirectionalLight(0xffffff, 2);
   directionalLight.position.set(
-    center.x,
-    center.y - 200000,
-    extent.zmax + 100000
+    lightPosition.x,
+    lightPosition.y,
+    lightPosition.z
   );
 
   // Create a target for the ligth
