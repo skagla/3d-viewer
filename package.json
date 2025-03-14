@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "d3": "^7.9.0",
     "earcut": "^3.0.1",
     "geo-three": "^0.1.15",
     "next": "15.2.1",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.0.11",
+    "@types/d3": "^7.4.3",
     "@types/earcut": "^3.0.0",
     "@types/node": "^22",
     "@types/proj4": "^2.5.6",

@@ -1,38 +1,72 @@
-import { Group, Material, Mesh, MeshStandardMaterial, Scene } from "three";
+import {
+  Camera,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  Plane,
+  Raycaster,
+  Scene,
+  SphereGeometry,
+  Vector2,
+  Vector3,
+} from "three";
 import { buildMeshes } from "./utils/build-meshes";
 import { Extent, buildScene } from "./utils/build-scene";
-import { getCenter3D, getMetadata, transform } from "./utils/utils";
-import { MODEL_ID, SERVICE_URL } from "./config";
+import { getMetadata, transform } from "./utils/utils";
+import { MAPTILER_API_KEY, MODEL_ID, SERVICE_URL } from "./config";
 import {
   Orientation,
   buildClippingplanes,
 } from "./utils/build-clipping-planes";
 import { buildCoordinateGrid } from "./utils/build-coordinate-grid";
 import { DragControls } from "three/examples/jsm/Addons.js";
-import {
-  DebugProvider,
-  HeightDebugProvider,
-  MapHeightNode,
-  MapTilerProvider,
-  MapView,
-  OpenStreetMapsProvider,
-} from "geo-three";
+import { MapTilerProvider, MapView, OpenStreetMapsProvider } from "geo-three";
 import { CustomMapHeightNodeShader } from "./CustomMapHeightNodeShader";
+import { createSVG } from "./utils/create-borehole-svg";
 
-export class SceneView {
+export type CustomEvent = CustomEventInit<{
+  element: SVGSVGElement | null;
+}>;
+
+export class SceneView extends EventTarget {
   private _scene: Scene;
   private _dragControls: DragControls;
   private _model: Group;
+  private _camera: Camera;
+  private _container: HTMLElement;
+  private _raycaster: Raycaster;
+  private _extent: Extent;
+  private _startX: number = 0;
+  private _startY: number = 0;
+  private _isDragging: boolean = false;
+  private static _DRAG_THRESHOLD = 5;
 
-  constructor(scene: Scene, model: Group, controls: DragControls) {
+  constructor(
+    scene: Scene,
+    model: Group,
+    controls: DragControls,
+    camera: Camera,
+    container: HTMLElement,
+    extent: Extent
+  ) {
+    super();
     this._scene = scene;
     this._dragControls = controls;
     this._model = model;
+    this._camera = camera;
+    this._container = container;
+    this._raycaster = new Raycaster();
+    this._extent = extent;
   }
 
   static async create(container: HTMLElement, modelId: string) {
-    const { scene, model, dragControls } = await init(container, modelId);
-    return new SceneView(scene, model, dragControls);
+    const { scene, model, dragControls, camera, extent } = await init(
+      container,
+      modelId
+    );
+
+    return new SceneView(scene, model, dragControls, camera, container, extent);
   }
 
   get scene() {
@@ -118,9 +152,108 @@ export class SceneView {
       topo.visible = !topo.visible;
     }
   }
+
+  private _onPointerClick(event: MouseEvent) {
+    // Convert screen position to NDC (-1 to +1 range)
+    const pointer = new Vector2();
+    const clientRectangle = this._container.getBoundingClientRect();
+    pointer.x = (event.clientX / clientRectangle.width) * 2 - 1;
+    pointer.y = -(event.clientY / clientRectangle.height) * 2 + 1;
+
+    // Raycast from the camera
+    this._raycaster.setFromCamera(pointer, this._camera);
+
+    // Intersect with plane
+    const plane = new Plane(new Vector3(0, 0, 1), 0);
+    const worldPoint = new Vector3();
+    this._raycaster.ray.intersectPlane(plane, worldPoint);
+
+    // Cast a vertical ray from above
+    this._castVerticalRay(worldPoint);
+  }
+
+  private _castVerticalRay(targetPosition: Vector3) {
+    const z = this._extent.zmax + 10000;
+    const startPoint = new Vector3(targetPosition.x, targetPosition.y, z);
+
+    const direction = new Vector3(0, 0, -1);
+    this._raycaster.set(startPoint, direction);
+
+    // Check intersections with objects in the scene
+    const meshes = this._model.children.filter((c) => c.name !== "Topography");
+    const intersects = this._raycaster.intersectObjects(meshes, true);
+
+    this._addPoint(targetPosition);
+    if (intersects.length > 0) {
+      const data = [];
+      for (let i = 0; i < intersects.length; i += 2) {
+        const depthStart = intersects[i].point.z;
+        const depthEnd = intersects[i + 1].point.z;
+        let name = intersects[i].object.name;
+        let color = `#${(
+          (intersects[i].object as Mesh).material as MeshStandardMaterial
+        ).color.getHexString()}`;
+
+        data.push({ depthStart, depthEnd, name, color });
+      }
+
+      const element = createSVG(data, 400, 800, this._extent);
+      const event = new CustomEvent("svg-created", {
+        detail: { element },
+      });
+      this.dispatchEvent(event);
+    }
+  }
+
+  private _pointerDownListener = (event: PointerEvent) => {
+    this._isDragging = false;
+    this._startX = event.clientX;
+    this._startY = event.clientY;
+  };
+
+  private _pointerMoveListener = (event: PointerEvent) => {
+    if (
+      Math.abs(event.clientX - this._startX) > SceneView._DRAG_THRESHOLD ||
+      Math.abs(event.clientY - this._startY) > SceneView._DRAG_THRESHOLD
+    ) {
+      this._isDragging = true;
+    }
+  };
+
+  private _pointerUpListener = (event: PointerEvent) => {
+    if (!this._isDragging) {
+      this._onPointerClick(event);
+    }
+  };
+
+  enableRaycaster() {
+    this._container.addEventListener("pointerdown", this._pointerDownListener);
+    this._container.addEventListener("pointermove", this._pointerMoveListener);
+    this._container.addEventListener("pointerup", this._pointerUpListener);
+  }
+
+  disableRaycaster() {
+    this._container.removeEventListener(
+      "pointerdown",
+      this._pointerDownListener
+    );
+    this._container.removeEventListener(
+      "pointermove",
+      this._pointerMoveListener
+    );
+    this._container.removeEventListener("pointerup", this._pointerUpListener);
+  }
+
+  private _addPoint(point: Vector3) {
+    const geometry = new SphereGeometry(2500, 16, 16); // Small sphere
+    const material = new MeshBasicMaterial({ color: 0xff0000 }); // Red color
+    const sphere = new Mesh(geometry, material);
+
+    sphere.position.set(point.x, point.y, point.z);
+    this._scene.add(sphere);
+  }
 }
 
-const MAPTILER_API_KEY = "1JkD1W8u5UM5Tjd8r3Wl ";
 async function init(container: HTMLElement, modelId = MODEL_ID) {
   const modelData = await getMetadata(SERVICE_URL + modelId);
   const mappedFeatures = modelData.mappedfeatures;
@@ -188,5 +321,5 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   map.name = "topography";
   scene.add(map);
 
-  return { scene, model, dragControls };
+  return { scene, model, dragControls, camera, extent };
 }

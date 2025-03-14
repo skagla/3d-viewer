@@ -73,8 +73,8 @@ export class CustomMapHeightNodeShader extends MapHeightNode {
   );
 
   public constructor(
-    parentNode: MapHeightNode | undefined | null,
-    mapView: MapView | undefined | null,
+    parentNode: MapHeightNode | undefined,
+    mapView: MapView,
     location: number = QuadTreePosition.root,
     level: number = 0,
     x: number = 0,
@@ -86,14 +86,6 @@ export class CustomMapHeightNodeShader extends MapHeightNode {
         color: 0xffffff,
       })
     );
-
-    if (parentNode === null) {
-      parentNode = undefined;
-    }
-
-    if (mapView === null) {
-      mapView = undefined;
-    }
 
     super(
       parentNode,
@@ -173,10 +165,9 @@ export class CustomMapHeightNodeShader extends MapHeightNode {
     ) {
       console.warn("Geo-Three: Loading tile outside of provider range: ", this);
 
-      // @ts-ignore
-      this.material.map = MapHeightNodeShader.defaultTexture;
-      // @ts-ignore
-      this.material.needsUpdate = true;
+      (this.material as MeshPhongMaterial).map =
+        CustomMapHeightNodeShader.defaultTexture;
+      (this.material as MeshPhongMaterial).needsUpdate = true;
       return;
     }
 
@@ -191,16 +182,16 @@ export class CustomMapHeightNodeShader extends MapHeightNode {
         return;
       }
 
-      const texture = new Texture(image as any);
+      const texture = new Texture(image as HTMLImageElement);
       texture.generateMipmaps = false;
       texture.format = RGBAFormat;
       texture.magFilter = NearestFilter;
       texture.minFilter = NearestFilter;
       texture.needsUpdate = true;
 
-      // @ts-ignore
-      this.material.userData.heightMap.value = texture;
+      (this.material as Material).userData.heightMap.value = texture;
     } catch (e) {
+      console.warn("Could not fetch tile: ", e);
       if (this.disposed) {
         return;
       }
@@ -208,13 +199,11 @@ export class CustomMapHeightNodeShader extends MapHeightNode {
       console.warn("Geo-Three: Failed to load height data: ", this);
 
       // Water level texture (assume that missing texture will be water level)
-      // @ts-ignore
-      this.material.userData.heightMap.value =
+      (this.material as Material).userData.heightMap.value =
         CustomMapHeightNodeShader.defaultHeightTexture;
     }
 
-    // @ts-ignore
-    this.material.needsUpdate = true;
+    (this.material as Material).needsUpdate = true;
 
     this.heightLoaded = true;
   }

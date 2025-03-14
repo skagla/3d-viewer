@@ -1,13 +1,13 @@
 "use client";
 
-import { ReactNode, useContext, useRef, useState } from "react";
+import { ChangeEvent, ReactNode, useContext, useRef, useState } from "react";
 
 import {
   SceneViewContext,
   SceneViewContextType,
 } from "../providers/scene-view-provider";
 import { Mesh, MeshStandardMaterial } from "three";
-import { scheduler } from "timers/promises";
+import { CustomEvent } from "../three/SceneView";
 
 function Toggle({
   title,
@@ -15,7 +15,7 @@ function Toggle({
   defaultChecked,
 }: {
   title: string;
-  onChange: () => void;
+  onChange: (e: any) => void;
   defaultChecked?: boolean;
 }) {
   return (
@@ -44,6 +44,7 @@ function Accordion({
 }) {
   const [expanded, setExpanded] = useState<boolean>(true);
   const accordionBodyRef = useRef<HTMLDivElement>(null);
+
   function handleClick() {
     if (!accordionBodyRef.current) return;
 
@@ -56,7 +57,7 @@ function Accordion({
       <h2 id="accordion-collapse-heading-1">
         <button
           type="button"
-          className="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 rounded-t-xl focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3 hover:cursor-pointer"
+          className="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 rounded-t focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3 hover:cursor-pointer"
           data-accordion-target="#accordion-collapse-body-1"
           aria-expanded={expanded ? "true" : "false"}
           aria-controls="accordion-collapse-body-1"
@@ -95,6 +96,7 @@ function Accordion({
 }
 
 export function Form() {
+  const svgContainerRef = useRef<HTMLDivElement>(null);
   const { sceneView } = useContext(SceneViewContext) as SceneViewContextType;
 
   function handleChange() {
@@ -127,10 +129,33 @@ export function Form() {
     sceneView.toggleTopography();
   }
 
+  function handleDrilling(e: ChangeEvent) {
+    if (!sceneView) return;
+
+    if ((e.target as HTMLInputElement).checked) {
+      sceneView.enableRaycaster();
+      sceneView.addEventListener("svg-created", handleSVGCreated);
+    } else {
+      sceneView.disableRaycaster();
+      sceneView.removeEventListener("svg-created", handleSVGCreated);
+    }
+  }
+
+  function handleSVGCreated(e: CustomEvent) {
+    if (!svgContainerRef.current || !e.detail || !e.detail.element) return;
+
+    while (svgContainerRef.current.children.length > 0) {
+      const c = svgContainerRef.current.children[0];
+      svgContainerRef.current.removeChild(c);
+    }
+    svgContainerRef.current.appendChild(e.detail.element);
+  }
+
   return (
     <div className="w-full flex flex-col gap-2 overflow-y-auto">
       <div className="w-full flex flex-col gap-3 p-4 border border-gray-200 rounded shadow">
         <Toggle title="Slicing Box" onChange={handleChange} />
+        <Toggle title="Drilling Profiler" onChange={handleDrilling} />
         <Toggle title="Coordinate Grid" onChange={handleChangeCG} />
         <Toggle title="Wireframe" onChange={handleChangeWireframe} />
         <Toggle
@@ -178,6 +203,7 @@ export function Form() {
             </div>
           }
         </Accordion>
+        <div ref={svgContainerRef}> </div>
       </div>
     </div>
   );

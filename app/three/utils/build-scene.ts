@@ -6,8 +6,6 @@ import {
   DirectionalLight,
   Group,
   Object3D,
-  Vector3,
-  HemisphereLight,
 } from "three";
 
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -99,27 +97,28 @@ function animate() {
 function buildDefaultLights(scene: Scene, extent: Extent) {
   const center = getCenter3D(extent);
 
+  // Directional light position
   const lightPosition = {
     x: center.x,
-    y: center.y - 200000,
+    y: center.y - 15000,
     z: extent.zmax + 100000,
   };
 
   const lights = [];
 
   // Ambient light
-  const ambient = new AmbientLight(0xffffff, 2);
+  const ambient = new AmbientLight(0xffffff, 1);
   lights.push(ambient);
 
   // Directional lights
-  const directionalLight = new DirectionalLight(0xffffff, 2);
+  const directionalLight = new DirectionalLight(0xffffff, 1.5);
   directionalLight.position.set(
     lightPosition.x,
     lightPosition.y,
     lightPosition.z
   );
 
-  // Create a target for the ligth
+  // Create a target for the directional light
   const target = new Object3D();
   target.position.set(center.x, center.y, center.z);
   scene.add(target);
