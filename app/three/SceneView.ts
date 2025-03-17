@@ -23,7 +23,7 @@ import { buildCoordinateGrid } from "./utils/build-coordinate-grid";
 import { DragControls } from "three/examples/jsm/Addons.js";
 import { MapTilerProvider, MapView, OpenStreetMapsProvider } from "geo-three";
 import { CustomMapHeightNodeShader } from "./CustomMapHeightNodeShader";
-import { createSVG } from "./utils/create-borehole-svg";
+import { Data, createSVG } from "./utils/create-borehole-svg";
 
 export type CustomEvent = CustomEventInit<{
   element: SVGSVGElement | null;
@@ -41,6 +41,7 @@ export class SceneView extends EventTarget {
   private _startY: number = 0;
   private _isDragging: boolean = false;
   private static _DRAG_THRESHOLD = 5;
+  private _callback: EventListenerOrEventListenerObject | null = null;
 
   constructor(
     scene: Scene,
@@ -183,21 +184,36 @@ export class SceneView extends EventTarget {
     const meshes = this._model.children.filter((c) => c.name !== "Topography");
     const intersects = this._raycaster.intersectObjects(meshes, true);
 
+    // Remove existing point and add visual marker
+    this._removePoint();
     this._addPoint(targetPosition);
+
+    // Iterate over intersections
     if (intersects.length > 0) {
-      const data = [];
+      const data: Data[] = [];
       for (let i = 0; i < intersects.length; i += 2) {
         const depthStart = intersects[i].point.z;
         const depthEnd = intersects[i + 1].point.z;
-        let name = intersects[i].object.name;
-        let color = `#${(
+        const name = intersects[i].object.name;
+        const color = `#${(
           (intersects[i].object as Mesh).material as MeshStandardMaterial
         ).color.getHexString()}`;
 
-        data.push({ depthStart, depthEnd, name, color });
+        // Avoid duplicate entries, just update the depth information
+        const index = data.findIndex((d) => d.name === name);
+        if (index > -1) {
+          data[index] = {
+            depthStart: data[index].depthStart,
+            depthEnd,
+            name,
+            color,
+          };
+        } else {
+          data.push({ depthStart, depthEnd, name, color });
+        }
       }
 
-      const element = createSVG(data, 400, 800, this._extent);
+      const element = createSVG(data, 400, 600, this._extent);
       const event = new CustomEvent("svg-created", {
         detail: { element },
       });
@@ -226,10 +242,14 @@ export class SceneView extends EventTarget {
     }
   };
 
-  enableRaycaster() {
+  enableRaycaster(callback: EventListenerOrEventListenerObject) {
     this._container.addEventListener("pointerdown", this._pointerDownListener);
     this._container.addEventListener("pointermove", this._pointerMoveListener);
     this._container.addEventListener("pointerup", this._pointerUpListener);
+
+    // Add event listener for svg-created event
+    this.addEventListener("svg-created", callback);
+    this._callback = callback;
   }
 
   disableRaycaster() {
@@ -242,15 +262,29 @@ export class SceneView extends EventTarget {
       this._pointerMoveListener
     );
     this._container.removeEventListener("pointerup", this._pointerUpListener);
+
+    if (this._callback) {
+      this.removeEventListener("svg-created", this._callback);
+    }
   }
 
+  // Add point marker for bore profiles
   private _addPoint(point: Vector3) {
-    const geometry = new SphereGeometry(2500, 16, 16); // Small sphere
-    const material = new MeshBasicMaterial({ color: 0xff0000 }); // Red color
+    const geometry = new SphereGeometry(1000, 16, 16);
+    const material = new MeshBasicMaterial({ color: 0xff0000 });
     const sphere = new Mesh(geometry, material);
+    sphere.name = "point-marker";
 
     sphere.position.set(point.x, point.y, point.z);
     this._scene.add(sphere);
+  }
+
+  private _removePoint() {
+    const o = this._scene.getObjectByName("point-marker");
+
+    if (o) {
+      this._scene.remove(o);
+    }
   }
 }
 
