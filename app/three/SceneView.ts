@@ -20,7 +20,7 @@ import {
   buildClippingplanes,
 } from "./utils/build-clipping-planes";
 import { buildCoordinateGrid } from "./utils/build-coordinate-grid";
-import { DragControls } from "three/examples/jsm/Addons.js";
+import { DragControls, OBJExporter } from "three/examples/jsm/Addons.js";
 import { MapTilerProvider, MapView, OpenStreetMapsProvider } from "geo-three";
 import { CustomMapHeightNodeShader } from "./CustomMapHeightNodeShader";
 import { Data, createSVG } from "./utils/create-borehole-svg";
@@ -285,6 +285,21 @@ export class SceneView extends EventTarget {
     if (o) {
       this._scene.remove(o);
     }
+  }
+
+  // Function to export the group as an OBJ file
+  public exportOBJ() {
+    const exporter = new OBJExporter();
+    const objString = exporter.parse(this._model);
+
+    // Create a Blob and trigger a download
+    const blob = new Blob([objString], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "geologic_model.obj";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 }
 

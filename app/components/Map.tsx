@@ -39,7 +39,7 @@ export function Map() {
   }, [divRef, setSceneView]);
 
   return (
-    <div className="w-full h-full flex flex-col justify-center">
+    <div className="w-full h-full">
       <div className="w-full h-full" ref={divRef}></div>
     </div>
   );
