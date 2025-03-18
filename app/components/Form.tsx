@@ -211,7 +211,7 @@ export function Form() {
 
   return (
     <div className="w-full max-h-full flex flex-col gap-2 dark:bg-gray-700">
-      <div className="w-full h-full flex flex-col gap-3 p-2 border border-gray-200 dark:border-gray-400 rounded shadow">
+      <div className="w-full h-full flex flex-col gap-3 p-2">
         <div className="w-full flex justify-end">
           <button
             onClick={handleExport}
