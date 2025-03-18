@@ -13,7 +13,7 @@ import {
 } from "three";
 import { buildMeshes } from "./utils/build-meshes";
 import { Extent, buildScene } from "./utils/build-scene";
-import { getCenter3D, getMetadata, transform } from "./utils/utils";
+import { getMetadata, transform } from "./utils/utils";
 import { MAPTILER_API_KEY, MODEL_ID, SERVICE_URL } from "./config";
 import {
   Orientation,
