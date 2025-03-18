@@ -4,34 +4,40 @@ import { Map } from "./components/Map";
 import { Form } from "./components/Form";
 import { SceneViewProvider } from "./providers/scene-view-provider";
 import { useState } from "react";
+import { ResetView } from "./components/ResetView";
 
 export default function Home() {
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
 
   return (
     <div className="w-screen h-screen">
-      <main className="h-screen flex flex-col">
+      <main className="h-screen">
         <SceneViewProvider>
-          <div className="sm:hidden p-4 bg-white shadow-md flex justify-between items-center">
-            <span className="text-lg font-semibold">3D-Viewer</span>
+          <div className="sm:hidden p-4 bg-white dark:bg-gray-700 shadow-md flex justify-between items-center">
+            <span className="text-lg font-semibold text-gray-700 dark:text-gray-400">
+              3D-Viewer
+            </span>
             <button
               onClick={() => setIsFormOpen(true)}
-              className="text-3xl hover:cursor-pointer"
+              className="text-3xl hover:cursor-pointer text-gray-700 dark:text-gray-400"
             >
               ☰
             </button>
           </div>
-          <div className="flex-1 flex min-h-0">
+          <div className="flex-1 flex min-h-0 h-full">
             <div className="flex-1">
+              <div className="hidden sm:block absolute top-2 left-2">
+                <ResetView></ResetView>
+              </div>
               <Map></Map>
             </div>
             <div
-              className={`fixed inset-0 bg-white p-2 flex flex-col items-center border-l border-gray-200 shadow-lg transition-transform duration-300 sm:static w-full sm:w-[350px] xl:w-[480px] sm:translate-x-0 ${
+              className={`fixed sm:static inset-0 flex flex-col gap-1 items-center bg-white dark:bg-gray-700 p-2 sm:border-l border-gray-200 shadow-lg transition-transform duration-300 w-full sm:w-[350px] xl:w-[480px] ${
                 isFormOpen ? "translate-x-0" : "translate-x-full"
               } sm:translate-x-0`}
             >
               <button
-                className="self-end text-gray-500 sm:hidden text-3xl hover:cursor-pointer mb-1 mr-1"
+                className="sm:hidden self-end text-gray-500 text-3xl hover:cursor-pointer p-1"
                 onClick={() => setIsFormOpen(false)}
               >
                 ✖

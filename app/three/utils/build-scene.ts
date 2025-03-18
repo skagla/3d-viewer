@@ -64,9 +64,9 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   controls.maxDistance = maxSize * 3;
   controls.minDistance = maxSize / 5;
   controls.update();
+  controls.saveState();
 
-  // Scene
-  // set wireframe to false on initial load
+  // Set wireframe to false on initial load
   scene = new Scene();
   scene.userData.wireframe = false;
 

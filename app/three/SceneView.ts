@@ -13,14 +13,18 @@ import {
 } from "three";
 import { buildMeshes } from "./utils/build-meshes";
 import { Extent, buildScene } from "./utils/build-scene";
-import { getMetadata, transform } from "./utils/utils";
+import { getCenter3D, getMetadata, transform } from "./utils/utils";
 import { MAPTILER_API_KEY, MODEL_ID, SERVICE_URL } from "./config";
 import {
   Orientation,
   buildClippingplanes,
 } from "./utils/build-clipping-planes";
 import { buildCoordinateGrid } from "./utils/build-coordinate-grid";
-import { DragControls, OBJExporter } from "three/examples/jsm/Addons.js";
+import {
+  DragControls,
+  OBJExporter,
+  OrbitControls,
+} from "three/examples/jsm/Addons.js";
 import { MapTilerProvider, MapView, OpenStreetMapsProvider } from "geo-three";
 import { CustomMapHeightNodeShader } from "./CustomMapHeightNodeShader";
 import { Data, createSVG } from "./utils/create-borehole-svg";
@@ -42,32 +46,43 @@ export class SceneView extends EventTarget {
   private _isDragging: boolean = false;
   private static _DRAG_THRESHOLD = 5;
   private _callback: EventListenerOrEventListenerObject | null = null;
+  private _orbitControls: OrbitControls;
 
   constructor(
     scene: Scene,
     model: Group,
-    controls: DragControls,
+    dragControls: DragControls,
     camera: Camera,
     container: HTMLElement,
-    extent: Extent
+    extent: Extent,
+    orbitControls: OrbitControls
   ) {
     super();
     this._scene = scene;
-    this._dragControls = controls;
+    this._dragControls = dragControls;
     this._model = model;
     this._camera = camera;
     this._container = container;
     this._raycaster = new Raycaster();
     this._extent = extent;
+    this._orbitControls = orbitControls;
   }
 
   static async create(container: HTMLElement, modelId: string) {
-    const { scene, model, dragControls, camera, extent } = await init(
+    const { scene, model, dragControls, camera, extent, controls } = await init(
       container,
       modelId
     );
 
-    return new SceneView(scene, model, dragControls, camera, container, extent);
+    return new SceneView(
+      scene,
+      model,
+      dragControls,
+      camera,
+      container,
+      extent,
+      controls
+    );
   }
 
   get scene() {
@@ -218,6 +233,11 @@ export class SceneView extends EventTarget {
         detail: { element },
       });
       this.dispatchEvent(event);
+    } else {
+      const event = new CustomEvent("svg-created", {
+        detail: null,
+      });
+      this.dispatchEvent(event);
     }
   }
 
@@ -301,6 +321,11 @@ export class SceneView extends EventTarget {
     link.click();
     document.body.removeChild(link);
   }
+
+  // Reset view to initial extent
+  public resetView() {
+    this._orbitControls.reset();
+  }
 }
 
 async function init(container: HTMLElement, modelId = MODEL_ID) {
@@ -370,5 +395,5 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   map.name = "topography";
   scene.add(map);
 
-  return { scene, model, dragControls, camera, extent };
+  return { scene, model, dragControls, camera, extent, controls };
 }

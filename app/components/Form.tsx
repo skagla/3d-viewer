@@ -16,6 +16,7 @@ import {
 } from "../providers/scene-view-provider";
 import { Mesh, MeshStandardMaterial } from "three";
 import { CustomEvent } from "../three/SceneView";
+import { RangeSlider } from "./RangeSlider";
 
 function Toggle({
   title,
@@ -35,8 +36,8 @@ function Toggle({
         onChange={onChange}
         defaultChecked={defaultChecked ? true : false}
       />
-      <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
-      <span className="ms-3 text-xs xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+      <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-gray-300 rounded-full peer dark:bg-gray-400 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-400 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-400"></div>
+      <span className="ms-3 text-xs xl:text-sm font-medium text-gray-500 dark:text-gray-400">
         {title}
       </span>
     </label>
@@ -77,8 +78,8 @@ const Accordion = forwardRef<AccordionRef, AccordionProps>(
 
     const className =
       position === Position.Center
-        ? "flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-b border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3 hover:cursor-pointer"
-        : "flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-b border-gray-200 rounded-t focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3 hover:cursor-pointer";
+        ? "flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-b border-gray-200 dark:border-gray-400 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3 hover:cursor-pointer"
+        : "flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-b border-gray-200 rounded-t dark:border-gray-400 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3 hover:cursor-pointer";
 
     return (
       <div>
@@ -118,7 +119,7 @@ const Accordion = forwardRef<AccordionRef, AccordionProps>(
           aria-labelledby="accordion-collapse-heading-1"
           className={expanded ? "" : "hidden"}
         >
-          <div className="p-5 border border-gray-200 dark:border-gray-700 dark:bg-gray-900">
+          <div className="p-5 border border-gray-200 dark:border-gray-400 dark:bg-gray-700">
             {children}
           </div>
         </div>
@@ -132,6 +133,8 @@ export function Form() {
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const accordionRef1 = useRef<AccordionRef>(null);
   const accordionRef0 = useRef<AccordionRef>(null);
+
+  const [emptyProfile, setEmptyProfile] = useState<boolean>(false);
   const { sceneView } = useContext(SceneViewContext) as SceneViewContextType;
 
   function handleChange() {
@@ -176,17 +179,26 @@ export function Form() {
   }
 
   function handleSVGCreated(e: CustomEvent) {
-    if (!svgContainerRef.current || !e.detail || !e.detail.element) return;
+    if (
+      !svgContainerRef.current ||
+      !accordionRef0.current ||
+      !accordionRef1.current
+    )
+      return;
 
     while (svgContainerRef.current.children.length > 0) {
       const c = svgContainerRef.current.children[0];
       svgContainerRef.current.removeChild(c);
     }
-    svgContainerRef.current.appendChild(e.detail.element);
-    if (accordionRef0.current) {
+
+    if (e.detail && e.detail.element) {
+      setEmptyProfile(false);
+      svgContainerRef.current.appendChild(e.detail.element);
       accordionRef0.current.open(false);
-    }
-    if (accordionRef1.current) {
+      accordionRef1.current.open(true);
+    } else {
+      setEmptyProfile(true);
+      accordionRef0.current.open(false);
       accordionRef1.current.open(true);
     }
   }
@@ -198,17 +210,17 @@ export function Form() {
   }
 
   return (
-    <div className="w-full max-h-full flex flex-col gap-2">
-      <div className="w-full h-full flex flex-col gap-3 p-2 border border-gray-200 rounded shadow">
+    <div className="w-full max-h-full flex flex-col gap-2 dark:bg-gray-700">
+      <div className="w-full h-full flex flex-col gap-3 p-2 border border-gray-200 dark:border-gray-400 rounded shadow">
         <div className="w-full flex justify-end">
           <button
             onClick={handleExport}
-            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2  dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 hover:cursor-pointer"
+            className="text-white bg-red-400 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2  dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800 hover:cursor-pointer"
           >
             Export as .obj
           </button>
         </div>
-        <div className="border border-gray-200 rounded grid grid-cols-2 gap-y-2 p-2">
+        <div className="border border-gray-200 dark:border-gray-400 rounded grid grid-cols-2 gap-y-2 p-2">
           <Toggle title="Slicing Box" onChange={handleChange} />
           <Toggle title="Virtual Profile" onChange={handleDrilling} />
           <Toggle title="Coordinate Grid" onChange={handleChangeCG} />
@@ -219,6 +231,10 @@ export function Form() {
             defaultChecked
           />
         </div>
+        <div className="px-2 pt-2 border border-gray-200 dark:border-gray-400 rounded">
+          <RangeSlider></RangeSlider>
+        </div>
+
         <div className="overflow-y-auto">
           <Accordion
             title="Layers"
@@ -238,7 +254,7 @@ export function Form() {
                   return (
                     <div
                       key={key}
-                      className="flex items-center justify-start gap-2.5 border-b border-gray-200 py-1"
+                      className="flex items-center justify-start gap-2.5 border-b border-gray-200 dark:border-gray-400 py-1 dark:text-gray-400"
                     >
                       <span
                         className="inline-block w-5 h-5 flex-none rounded"
@@ -255,7 +271,7 @@ export function Form() {
                       />
                       <label
                         htmlFor={key}
-                        className="antialiased font-light text-gray-700"
+                        className="font-light text-gray-500 dark:text-gray-400"
                       >
                         {child.name}
                       </label>
@@ -271,7 +287,17 @@ export function Form() {
             open={false}
             ref={accordionRef1}
           >
-            <div ref={svgContainerRef}> </div>
+            {emptyProfile ? (
+              <div className="font-light text-gray-500 dark:text-gray-400 text-sm">
+                Virtual profile does not intersect the model.
+              </div>
+            ) : null}
+            <div ref={svgContainerRef} className="dark:bg-gray-400">
+              <div className="font-light text-gray-500 dark:text-gray-400 dark:bg-gray-700 text-sm">
+                Please enable the Virtual Profile toggle and select a profile
+                position!
+              </div>
+            </div>
           </Accordion>
         </div>
       </div>
