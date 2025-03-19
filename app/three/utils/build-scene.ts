@@ -6,6 +6,13 @@ import {
   DirectionalLight,
   Group,
   Object3D,
+  AxesHelper,
+  OrthographicCamera,
+  Camera,
+  CanvasTexture,
+  SpriteMaterial,
+  Sprite,
+  Euler,
 } from "three";
 
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -24,6 +31,9 @@ let controls: OrbitControls;
 let renderer: WebGLRenderer;
 let camera: PerspectiveCamera;
 let scene: Scene;
+let axesHelper: AxesHelper;
+let uiCamera: Camera;
+let uiScene: Scene;
 export function buildScene(container: HTMLElement, extent: Extent) {
   const maxSize = getMaxSize(extent);
   const center = getCenter3D(extent);
@@ -61,6 +71,7 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(center.x, center.y, center.z); // Focus on the center
   controls.enableDamping = true; // Smooth camera movement
+  controls.dampingFactor = 0.1;
   controls.maxDistance = maxSize * 3;
   controls.minDistance = maxSize / 5;
   controls.update();
@@ -72,6 +83,27 @@ export function buildScene(container: HTMLElement, extent: Extent) {
 
   // Add lights to the scene
   buildDefaultLights(scene, extent);
+
+  uiScene = new Scene();
+
+  // Create an orthographic camera
+  uiCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+  uiCamera.up.set(0, 0, 1);
+  uiCamera.position.z = 2;
+
+  // Create the AxesHelper (small size)
+  axesHelper = new AxesHelper(0.1);
+  axesHelper.position.set(-0.9, -0.8, 0);
+
+  const xLabel = createTextSprite("X", "red");
+  const yLabel = createTextSprite("Y", "green");
+  const zLabel = createTextSprite("Z", "blue");
+  xLabel.position.set(0.125, 0, 0);
+  yLabel.position.set(0, 0.125, 0);
+  zLabel.position.set(0, 0, 0.125);
+
+  axesHelper.add(xLabel, yLabel, zLabel);
+  uiScene.add(axesHelper);
 
   return { renderer, scene, camera, controls };
 }
@@ -88,7 +120,16 @@ function onWindowResize(container: HTMLElement) {
 }
 
 function animate() {
+  // axesHelper.quaternion.copy(camera.quaternion);
+  let rot = new Euler();
+  rot.x = -camera.rotation.x;
+  rot.y = camera.rotation.y;
+  rot.z = camera.rotation.z;
+  axesHelper.setRotationFromEuler(rot);
+  renderer.autoClear = true;
   renderer.render(scene, camera);
+  renderer.autoClear = false;
+  renderer.render(uiScene, uiCamera); // Render UI scene
 
   // required if controls.enableDamping or controls.autoRotate are set to true
   controls.update();
@@ -130,4 +171,26 @@ function buildDefaultLights(scene: Scene, extent: Extent) {
   lightsGroup.name = "lights";
   lightsGroup.add(...lights);
   scene.add(lightsGroup);
+}
+
+function createTextSprite(text: string, color = "white") {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = 256;
+  canvas.height = 128;
+
+  if (ctx) {
+    ctx.fillStyle = color;
+    ctx.font = "24px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+  }
+
+  const texture = new CanvasTexture(canvas);
+  const material = new SpriteMaterial({ map: texture });
+  const sprite = new Sprite(material);
+  sprite.scale.set(0.3, 0.15, 1);
+
+  return sprite;
 }

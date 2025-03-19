@@ -25,8 +25,8 @@ export default function Home() {
             </button>
           </div>
           <div className="flex-1 flex min-h-0 h-full">
-            <div className="flex-1">
-              <div className="hidden sm:block absolute top-2 left-2">
+            <div className="relative flex-1">
+              <div className="hidden sm:block absolute top-2 right-2">
                 <ResetView></ResetView>
               </div>
               <Map></Map>

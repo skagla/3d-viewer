@@ -19,7 +19,10 @@ import {
   Orientation,
   buildClippingplanes,
 } from "./utils/build-clipping-planes";
-import { buildCoordinateGrid } from "./utils/build-coordinate-grid";
+import {
+  buildCoordinateGrid,
+  buildHeightGrid,
+} from "./utils/build-coordinate-grid";
 import {
   DragControls,
   OBJExporter,
@@ -371,9 +374,15 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
 
   // Add a coordinate grid to the scene
   const { gridHelper, annotations } = buildCoordinateGrid(extent);
+  const { heightGridHelper, heightAnnotations } = buildHeightGrid(extent);
   const annotationsGroup = new Group();
   annotationsGroup.name = "coordinate-grid";
-  annotationsGroup.add(...annotations, gridHelper);
+  annotationsGroup.add(
+    ...annotations,
+    gridHelper,
+    ...heightAnnotations,
+    heightGridHelper
+  );
   annotationsGroup.visible = false;
   scene.add(annotationsGroup);
 
