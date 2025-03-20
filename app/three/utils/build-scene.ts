@@ -93,12 +93,12 @@ export function buildScene(container: HTMLElement, extent: Extent) {
 
   // Create the AxesHelper (small size)
   axesHelper = new AxesHelper(0.1);
-  axesHelper.position.set(-0.9, -0.8, 0);
+  axesHelper.position.set(-0.85, -0.85, 0);
 
   const xLabel = createTextSprite("X", "red");
   const yLabel = createTextSprite("Y", "green");
   const zLabel = createTextSprite("Z", "blue");
-  xLabel.position.set(0.125, 0, 0);
+  xLabel.position.set(0.125, -0.01, 0);
   yLabel.position.set(0, 0.125, 0);
   zLabel.position.set(0, 0, 0.125);
 
@@ -120,16 +120,19 @@ function onWindowResize(container: HTMLElement) {
 }
 
 function animate() {
-  // axesHelper.quaternion.copy(camera.quaternion);
+  // Set rotation of axes according to camera rotation
   let rot = new Euler();
   rot.x = -camera.rotation.x;
   rot.y = camera.rotation.y;
-  rot.z = camera.rotation.z;
+  rot.z = -camera.rotation.z;
   axesHelper.setRotationFromEuler(rot);
+
   renderer.autoClear = true;
   renderer.render(scene, camera);
+
+  // Set autoclear to fasle in order to overlay UI elements
   renderer.autoClear = false;
-  renderer.render(uiScene, uiCamera); // Render UI scene
+  renderer.render(uiScene, uiCamera);
 
   // required if controls.enableDamping or controls.autoRotate are set to true
   controls.update();

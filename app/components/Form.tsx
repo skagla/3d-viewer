@@ -83,13 +83,11 @@ const Accordion = forwardRef<AccordionRef, AccordionProps>(
 
     return (
       <div>
-        <h2 id="accordion-collapse-heading-1">
+        <h2 id="accordion-collapse-heading">
           <button
             type="button"
             className={className}
-            data-accordion-target="#accordion-collapse-body-1"
             aria-expanded={expanded ? "true" : "false"}
-            aria-controls="accordion-collapse-body-1"
             onClick={handleClick}
           >
             <span>{title}</span>
@@ -114,9 +112,9 @@ const Accordion = forwardRef<AccordionRef, AccordionProps>(
           </button>
         </h2>
         <div
-          id="accordion-collapse-body-1"
+          id="accordion-collapse-body"
           ref={accordionBodyRef}
-          aria-labelledby="accordion-collapse-heading-1"
+          aria-labelledby="accordion-collapse-heading"
           className={expanded ? "" : "hidden"}
         >
           <div className="p-5 border border-gray-200 dark:border-gray-400 dark:bg-gray-700">
@@ -210,96 +208,94 @@ export function Form() {
   }
 
   return (
-    <div className="w-full max-h-full flex flex-col gap-2 dark:bg-gray-700">
-      <div className="w-full h-full flex flex-col gap-3 p-2">
-        <div className="w-full flex justify-end">
-          <button
-            onClick={handleExport}
-            className="text-white bg-red-400 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2  dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800 hover:cursor-pointer"
-          >
-            Export as .obj
-          </button>
-        </div>
-        <div className="border border-gray-200 dark:border-gray-400 rounded grid grid-cols-2 gap-y-2 p-2">
-          <Toggle title="Slicing Box" onChange={handleChange} />
-          <Toggle title="Virtual Profile" onChange={handleDrilling} />
-          <Toggle title="Coordinate Grid" onChange={handleChangeCG} />
-          <Toggle title="Wireframe" onChange={handleChangeWireframe} />
-          <Toggle
-            title="Topography (OSM)"
-            onChange={handleChangeTopography}
-            defaultChecked
-          />
-        </div>
-        <div className="px-2 pt-2 border border-gray-200 dark:border-gray-400 rounded">
-          <RangeSlider></RangeSlider>
-        </div>
+    <div className="w-full max-h-full min-h-0 flex flex-col gap-2 dark:bg-gray-700">
+      <div className="w-full flex justify-end">
+        <button
+          onClick={handleExport}
+          className="text-white bg-red-400 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800 hover:cursor-pointer"
+        >
+          Export as .obj
+        </button>
+      </div>
+      <div className="border border-gray-200 dark:border-gray-400 rounded grid grid-cols-2 gap-y-2 p-2">
+        <Toggle title="Slicing Box" onChange={handleChange} />
+        <Toggle title="Virtual Profile" onChange={handleDrilling} />
+        <Toggle title="Coordinate Grid" onChange={handleChangeCG} />
+        <Toggle title="Wireframe" onChange={handleChangeWireframe} />
+        <Toggle
+          title="Topography (OSM)"
+          onChange={handleChangeTopography}
+          defaultChecked
+        />
+      </div>
+      <div className="px-2 pt-2 border border-gray-200 dark:border-gray-400 rounded">
+        <RangeSlider></RangeSlider>
+      </div>
 
-        <div className="overflow-y-auto">
-          <Accordion
-            title="Layers"
-            position={Position.Start}
-            open={true}
-            ref={accordionRef0}
-          >
-            {
-              <div className="flex flex-col gap-2">
-                {sceneView?.model.children.map((child) => {
-                  const key = `toggle-visibility-${child.name}`;
-                  const color = `#${(
-                    (child as Mesh).material as MeshStandardMaterial
-                  ).color.getHexString()}`;
-                  const visible = (child as Mesh).visible;
+      <div className="overflow-y-auto">
+        <Accordion
+          title="Layers"
+          position={Position.Start}
+          open={true}
+          ref={accordionRef0}
+        >
+          {
+            <div className="flex flex-col gap-2">
+              {sceneView?.model.children.map((child) => {
+                const key = `toggle-visibility-${child.name}`;
+                const color = `#${(
+                  (child as Mesh).material as MeshStandardMaterial
+                ).color.getHexString()}`;
+                const visible = (child as Mesh).visible;
 
-                  return (
-                    <div
-                      key={key}
-                      className="flex items-center justify-start gap-2.5 border-b border-gray-200 dark:border-gray-400 py-1 dark:text-gray-400"
+                return (
+                  <div
+                    key={key}
+                    className="flex items-center justify-start gap-2.5 border-b border-gray-200 dark:border-gray-400 py-1 dark:text-gray-400"
+                  >
+                    <span
+                      className="inline-block w-5 h-5 flex-none rounded"
+                      style={{
+                        backgroundColor: color,
+                      }}
+                    ></span>
+                    <input
+                      id={key}
+                      type="checkbox"
+                      onChange={() => handleCheckboxChange(child.name)}
+                      className="hover:cursor-pointer"
+                      defaultChecked={visible ? true : false}
+                    />
+                    <label
+                      htmlFor={key}
+                      className="font-light text-gray-500 dark:text-gray-400"
                     >
-                      <span
-                        className="inline-block w-5 h-5 flex-none rounded"
-                        style={{
-                          backgroundColor: color,
-                        }}
-                      ></span>
-                      <input
-                        id={key}
-                        type="checkbox"
-                        onChange={() => handleCheckboxChange(child.name)}
-                        className="hover:cursor-pointer"
-                        defaultChecked={visible ? true : false}
-                      />
-                      <label
-                        htmlFor={key}
-                        className="font-light text-gray-500 dark:text-gray-400"
-                      >
-                        {child.name}
-                      </label>
-                    </div>
-                  );
-                })}
-              </div>
-            }
-          </Accordion>
-          <Accordion
-            title="Virtual Profile"
-            position={Position.Center}
-            open={false}
-            ref={accordionRef1}
-          >
-            {emptyProfile ? (
-              <div className="font-light text-gray-500 dark:text-gray-400 text-sm">
-                Virtual profile does not intersect the model.
-              </div>
-            ) : null}
-            <div ref={svgContainerRef} className="dark:bg-gray-400">
-              <div className="font-light text-gray-500 dark:text-gray-400 dark:bg-gray-700 text-sm">
-                Please enable the Virtual Profile toggle and select a profile
-                position!
-              </div>
+                      {child.name}
+                    </label>
+                  </div>
+                );
+              })}
             </div>
-          </Accordion>
-        </div>
+          }
+        </Accordion>
+        <Accordion
+          title="Virtual Profile"
+          position={Position.Center}
+          open={false}
+          ref={accordionRef1}
+        >
+          {emptyProfile ? (
+            <div className="font-light text-gray-500 dark:text-gray-400 text-sm">
+              Virtual profile does not intersect the model.
+            </div>
+          ) : null}
+          <div ref={svgContainerRef} className="dark:bg-gray-400">
+            <div className="font-light text-gray-500 dark:text-gray-400 dark:bg-gray-700 text-sm">
+              Please enable the Virtual Profile toggle and select a profile
+              position!
+            </div>
+          </div>
+        </Accordion>
       </div>
     </div>
   );

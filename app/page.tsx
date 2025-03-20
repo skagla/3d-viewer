@@ -10,9 +10,9 @@ export default function Home() {
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
 
   return (
-    <div className="w-screen h-screen">
-      <main className="h-screen">
-        <SceneViewProvider>
+    <main className="h-screen">
+      <SceneViewProvider>
+        <div className="flex flex-col h-screen sm:flex-row">
           <div className="sm:hidden p-4 bg-white dark:bg-gray-700 shadow-md flex justify-between items-center">
             <span className="text-lg font-semibold text-gray-700 dark:text-gray-400">
               3D-Viewer
@@ -45,8 +45,8 @@ export default function Home() {
               <Form />
             </div>
           </div>
-        </SceneViewProvider>
-      </main>
-    </div>
+        </div>
+      </SceneViewProvider>
+    </main>
   );
 }
