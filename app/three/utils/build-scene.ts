@@ -121,7 +121,7 @@ function onWindowResize(container: HTMLElement) {
 
 function animate() {
   // Set rotation of axes according to camera rotation
-  let rot = new Euler();
+  const rot = new Euler();
   rot.x = -camera.rotation.x;
   rot.y = camera.rotation.y;
   rot.z = -camera.rotation.z;

@@ -48,13 +48,13 @@ export function buildCoordinateGrid(extent: Extent) {
 
   const annotations = [];
   for (let i = 0; i < xPairs.length - 1; i++) {
-    const [start, _] = xPairs[i];
+    const [start] = xPairs[i];
     const label = createLabel(`${start.x.toFixed(0)}m`, start, Orientation.X);
     annotations.push(label);
   }
 
   for (let i = 0; i < yPairs.length - 1; i++) {
-    const [start, _] = yPairs[i];
+    const [start] = yPairs[i];
     const label = createLabel(`${start.y.toFixed(0)}m`, start, Orientation.Y);
     annotations.push(label);
   }
