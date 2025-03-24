@@ -377,6 +377,7 @@ export class SceneView extends EventTarget {
       visible
     );
 
+    this._dragControls.dispose();
     this._dragControls = dragControls;
 
     // Add clipping planes to the meshes
