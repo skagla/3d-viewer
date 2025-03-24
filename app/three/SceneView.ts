@@ -1,15 +1,17 @@
 import {
-  Camera,
   Group,
+  Material,
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  PerspectiveCamera,
   Plane,
   Raycaster,
   Scene,
   SphereGeometry,
   Vector2,
   Vector3,
+  WebGLRenderer,
 } from "three";
 import { buildMeshes } from "./utils/build-meshes";
 import { Extent, buildScene } from "./utils/build-scene";
@@ -40,7 +42,7 @@ export class SceneView extends EventTarget {
   private _scene: Scene;
   private _dragControls: DragControls;
   private _model: Group;
-  private _camera: Camera;
+  private _camera: PerspectiveCamera;
   private _container: HTMLElement;
   private _raycaster: Raycaster;
   private _extent: Extent;
@@ -50,15 +52,17 @@ export class SceneView extends EventTarget {
   private static _DRAG_THRESHOLD = 5;
   private _callback: EventListenerOrEventListenerObject | null = null;
   private _orbitControls: OrbitControls;
+  private _renderer: WebGLRenderer;
 
   constructor(
     scene: Scene,
     model: Group,
     dragControls: DragControls,
-    camera: Camera,
+    camera: PerspectiveCamera,
     container: HTMLElement,
     extent: Extent,
-    orbitControls: OrbitControls
+    orbitControls: OrbitControls,
+    renderer: WebGLRenderer
   ) {
     super();
     this._scene = scene;
@@ -69,13 +73,12 @@ export class SceneView extends EventTarget {
     this._raycaster = new Raycaster();
     this._extent = extent;
     this._orbitControls = orbitControls;
+    this._renderer = renderer;
   }
 
   static async create(container: HTMLElement, modelId: string) {
-    const { scene, model, dragControls, camera, extent, controls } = await init(
-      container,
-      modelId
-    );
+    const { scene, model, dragControls, camera, extent, controls, renderer } =
+      await init(container, modelId);
 
     return new SceneView(
       scene,
@@ -84,7 +87,8 @@ export class SceneView extends EventTarget {
       camera,
       container,
       extent,
-      controls
+      controls,
+      renderer
     );
   }
 
@@ -311,7 +315,7 @@ export class SceneView extends EventTarget {
   }
 
   // Function to export the group as an OBJ file
-  public exportOBJ() {
+  exportOBJ() {
     const exporter = new OBJExporter();
     const objString = exporter.parse(this._model);
 
@@ -326,8 +330,69 @@ export class SceneView extends EventTarget {
   }
 
   // Reset view to initial extent
-  public resetView() {
+  resetView() {
     this._orbitControls.reset();
+  }
+
+  explode(explode: boolean) {
+    const DISPLACEMENT = 2000;
+    for (let i = 1; i < this._model.children.length; i++) {
+      const mesh = this._model.children[i];
+
+      if (explode) {
+        const displacement =
+          (this._model.children.length - i - 1) * DISPLACEMENT;
+        mesh.userData.originalPosition = mesh.position.clone();
+        mesh.translateZ(displacement);
+
+        if (i === 1) {
+          this._model.userData.zmax = this._extent.zmax;
+          this._extent.zmax += displacement;
+        }
+      } else {
+        if (mesh.userData.originalPosition) {
+          mesh.position.copy(mesh.userData.originalPosition);
+        }
+      }
+    }
+
+    // Reset extent
+    if (!explode && this._model.userData.zmax) {
+      this._extent.zmax = this._model.userData.zmax;
+    }
+
+    const box = this._scene.getObjectByName("clipping-box");
+    let visible = false;
+    if (box) {
+      visible = box.visible;
+      this._scene.remove(box);
+    }
+    const { planes, dragControls } = buildClippingplanes(
+      this._renderer,
+      this._camera,
+      this._orbitControls,
+      this._extent,
+      this._model.children as Mesh[],
+      this._scene,
+      visible
+    );
+
+    this._dragControls = dragControls;
+
+    // Add clipping planes to the meshes
+    for (const mesh of this._model.children) {
+      ((mesh as Mesh).material as Material).clippingPlanes = planes;
+    }
+
+    // Remove existing cap meshes
+    for (const o in Orientation) {
+      const capMeshGroupName = `cap-mesh-group-${o}`;
+      let capMeshGroup = this._scene.getObjectByName(capMeshGroupName);
+      while (capMeshGroup) {
+        this._scene.remove(capMeshGroup);
+        capMeshGroup = this._scene.getObjectByName(capMeshGroupName);
+      }
+    }
   }
 }
 
@@ -358,13 +423,15 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   scene.add(model);
 
   // Build the clipping planes and add them to the scene
+  const visible = false;
   const { planes, dragControls } = buildClippingplanes(
     renderer,
     camera,
     controls,
     extent,
     meshes,
-    scene
+    scene,
+    visible
   );
 
   // Add clipping planes to the meshes
@@ -404,5 +471,5 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   map.name = "topography";
   scene.add(map);
 
-  return { scene, model, dragControls, camera, extent, controls };
+  return { scene, model, dragControls, camera, extent, controls, renderer };
 }

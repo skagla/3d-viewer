@@ -52,15 +52,11 @@ async function buildMesh(layerData: MappedFeature) {
   const indices = new BufferAttribute(indexArray, 1);
 
   geometry.setIndex(indices);
-  geometry.scale(1, 1, 1);
-  geometry.computeBoundingSphere();
-  geometry.computeVertexNormals();
-  geometry.computeBoundingBox();
 
   const material = new MeshStandardMaterial({
     color: color,
     metalness: 0.0,
-    roughness: 0.75,
+    roughness: 1.0,
     flatShading: true,
     side: DoubleSide,
     wireframe: false,

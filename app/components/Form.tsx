@@ -22,24 +22,29 @@ function Toggle({
   title,
   onChange,
   defaultChecked,
+  disabled = false,
 }: {
   title: string;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   defaultChecked?: boolean;
+  disabled?: boolean;
 }) {
   return (
-    <label className="inline-flex items-center cursor-pointer">
-      <input
-        type="checkbox"
-        value=""
-        className="sr-only peer"
-        onChange={onChange}
-        defaultChecked={defaultChecked ? true : false}
-      />
-      <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-gray-300 rounded-full peer dark:bg-gray-400 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-400 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-400"></div>
-      <span className="ms-3 text-xs xl:text-sm font-medium text-gray-500 dark:text-gray-400">
-        {title}
-      </span>
+    <label className="group">
+      <div className="inline-flex items-center cursor-pointer group-has-[input:disabled]:cursor-default">
+        <input
+          type="checkbox"
+          value=""
+          className="sr-only peer"
+          onChange={onChange}
+          defaultChecked={defaultChecked ? true : false}
+          disabled={disabled}
+        />
+        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-gray-300 rounded-full peer dark:bg-gray-400 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-400 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-400"></div>
+        <span className="ms-3 text-xs xl:text-sm font-medium text-gray-500 dark:text-gray-400 group-has-[input:disabled]:text-gray-200">
+          {title}
+        </span>
+      </div>
     </label>
   );
 }
@@ -133,6 +138,7 @@ export function Form() {
   const accordionRef0 = useRef<AccordionRef>(null);
 
   const [emptyProfile, setEmptyProfile] = useState<boolean>(false);
+  const [exploded, setExploded] = useState<boolean>(false);
   const { sceneView } = useContext(SceneViewContext) as SceneViewContextType;
 
   function handleChange() {
@@ -207,6 +213,18 @@ export function Form() {
     sceneView.exportOBJ();
   }
 
+  function handleExplode(e: ChangeEvent<HTMLInputElement>) {
+    if (!sceneView) return;
+
+    if (e.target.checked) {
+      sceneView.explode(true);
+      // setExploded(true);
+    } else {
+      sceneView.explode(false);
+      // setExploded(false);
+    }
+  }
+
   return (
     <div className="w-full max-h-full min-h-0 flex flex-col gap-2 dark:bg-gray-700">
       <div className="w-full flex justify-end">
@@ -218,8 +236,16 @@ export function Form() {
         </button>
       </div>
       <div className="border border-gray-200 dark:border-gray-400 rounded grid grid-cols-2 gap-y-2 p-2">
-        <Toggle title="Slicing Box" onChange={handleChange} />
-        <Toggle title="Virtual Profile" onChange={handleDrilling} />
+        <Toggle
+          title="Slicing Box"
+          onChange={handleChange}
+          disabled={exploded ? true : false}
+        />
+        <Toggle
+          title="Virtual Profile"
+          onChange={handleDrilling}
+          disabled={exploded ? true : false}
+        />
         <Toggle title="Coordinate Grid" onChange={handleChangeCG} />
         <Toggle title="Wireframe" onChange={handleChangeWireframe} />
         <Toggle
@@ -227,6 +253,7 @@ export function Form() {
           onChange={handleChangeTopography}
           defaultChecked
         />
+        <Toggle title="Explode" onChange={handleExplode} />
       </div>
       <div className="px-2 pt-2 border border-gray-200 dark:border-gray-400 rounded">
         <RangeSlider></RangeSlider>

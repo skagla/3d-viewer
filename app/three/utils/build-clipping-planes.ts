@@ -23,9 +23,9 @@ import { Extent } from "./build-scene";
 import earcut from "earcut";
 
 export enum Orientation {
-  X = "x",
-  Y = "y",
-  Z = "z",
+  X = "X",
+  Y = "Y",
+  Z = "Z",
 }
 
 type PlaneMesh = Mesh<PlaneGeometry, MeshBasicMaterial, Object3DEventMap>;
@@ -47,7 +47,8 @@ export function buildClippingplanes(
   orbitControls: OrbitControls,
   extent: Extent,
   meshes: Mesh[],
-  scene: Scene
+  scene: Scene,
+  visible: boolean
 ) {
   const planesData = [
     {
@@ -166,7 +167,7 @@ export function buildClippingplanes(
   const clippingBox = new Group();
   clippingBox.add(planeMeshGroup, edgeMeshGroup);
   clippingBox.name = "clipping-box";
-  clippingBox.visible = false;
+  clippingBox.visible = visible;
   scene.add(clippingBox);
 
   // Enable DragControls for the clipping planes
@@ -176,7 +177,7 @@ export function buildClippingplanes(
     renderer.domElement
   );
 
-  dragControls.enabled = false;
+  dragControls.enabled = visible;
 
   dragControls.addEventListener("dragstart", () => {
     // Disable OrbitControls when dragging starts
@@ -469,8 +470,6 @@ function generateCapMeshes(
 
   // Iterate over the list of geologic meshes
   for (const mesh of meshes) {
-    // Slice visible meshes only
-
     const position = mesh.geometry.attributes.position.array;
     const indices = mesh.geometry.index ? mesh.geometry.index.array : null;
     const edges: Array<[Vector3, Vector3]> = [];
@@ -484,9 +483,22 @@ function generateCapMeshes(
       const i2 = indices ? indices[i + 1] * 3 : (i + 1) * 3;
       const i3 = indices ? indices[i + 2] * 3 : (i + 2) * 3;
 
-      const v1 = new Vector3(position[i1], position[i1 + 1], position[i1 + 2]);
-      const v2 = new Vector3(position[i2], position[i2 + 1], position[i2 + 2]);
-      const v3 = new Vector3(position[i3], position[i3 + 1], position[i3 + 2]);
+      // Account for local translation of the mesh to its original geometry
+      const v1 = new Vector3(
+        position[i1],
+        position[i1 + 1],
+        position[i1 + 2] + mesh.position.z
+      );
+      const v2 = new Vector3(
+        position[i2],
+        position[i2 + 1],
+        position[i2 + 2] + mesh.position.z
+      );
+      const v3 = new Vector3(
+        position[i3],
+        position[i3 + 1],
+        position[i3 + 2] + mesh.position.z
+      );
 
       // Check if the triangle is cut by the plane
       const d1 = plane.distanceToPoint(v1);
@@ -516,7 +528,7 @@ function generateCapMeshes(
       color: (mesh.material as MeshStandardMaterial).color,
       side: DoubleSide,
       metalness: 0.0,
-      roughness: 0.75,
+      roughness: 1.0,
       flatShading: true,
       polygonOffset: true,
       polygonOffsetFactor: offset,

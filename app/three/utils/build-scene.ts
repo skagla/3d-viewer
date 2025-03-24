@@ -13,6 +13,7 @@ import {
   SpriteMaterial,
   Sprite,
   Euler,
+  Color,
 } from "three";
 
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -41,12 +42,7 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   const width = container.clientWidth;
   const height = container.clientHeight;
 
-  camera = new PerspectiveCamera(
-    50,
-    width / height,
-    maxSize * 0.1,
-    maxSize * 25
-  );
+  camera = new PerspectiveCamera(50, width / height, 10, maxSize * 20);
 
   camera.position.set(center.x, center.y - 200000, extent.zmax + 100000);
   camera.up.set(0, 0, 1);
@@ -54,7 +50,6 @@ export function buildScene(container: HTMLElement, extent: Extent) {
 
   // Initialize the renderer
   renderer = new WebGLRenderer({
-    alpha: true,
     logarithmicDepthBuffer: true,
   });
 
@@ -80,6 +75,7 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   // Set wireframe to false on initial load
   scene = new Scene();
   scene.userData.wireframe = false;
+  scene.background = new Color(0xbfd1e5);
 
   // Add lights to the scene
   buildDefaultLights(scene, extent);
