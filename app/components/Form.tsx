@@ -138,7 +138,6 @@ export function Form() {
   const accordionRef0 = useRef<AccordionRef>(null);
 
   const [emptyProfile, setEmptyProfile] = useState<boolean>(false);
-  const [exploded, setExploded] = useState<boolean>(false);
   const { sceneView } = useContext(SceneViewContext) as SceneViewContextType;
 
   function handleChange() {
@@ -236,16 +235,8 @@ export function Form() {
         </button>
       </div>
       <div className="border border-gray-200 dark:border-gray-400 rounded grid grid-cols-2 gap-y-2 p-2">
-        <Toggle
-          title="Slicing Box"
-          onChange={handleChange}
-          disabled={exploded ? true : false}
-        />
-        <Toggle
-          title="Virtual Profile"
-          onChange={handleDrilling}
-          disabled={exploded ? true : false}
-        />
+        <Toggle title="Slicing Box" onChange={handleChange} />
+        <Toggle title="Virtual Profile" onChange={handleDrilling} />
         <Toggle title="Coordinate Grid" onChange={handleChangeCG} />
         <Toggle title="Wireframe" onChange={handleChangeWireframe} />
         <Toggle
