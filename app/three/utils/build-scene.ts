@@ -8,24 +8,12 @@ import {
   Object3D,
   AxesHelper,
   OrthographicCamera,
-  Camera,
-  CanvasTexture,
-  SpriteMaterial,
-  Sprite,
-  Euler,
   Color,
-  Matrix4,
   Vector3,
-  Quaternion,
-  SphereGeometry,
-  MeshBasicMaterial,
-  Mesh,
 } from "three";
 
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { getCenter3D, getMaxSize } from "./utils";
-import { createLines } from "./build-coordinate-grid";
-import { max } from "d3";
 
 export interface Extent {
   xmin: number;
@@ -199,26 +187,4 @@ function buildDefaultLights(scene: Scene, extent: Extent) {
   lightsGroup.name = "lights";
   lightsGroup.add(...lights);
   scene.add(lightsGroup);
-}
-
-function createTextSprite(text: string, color = "white") {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  canvas.width = 256;
-  canvas.height = 128;
-
-  if (ctx) {
-    ctx.fillStyle = color;
-    ctx.font = "24px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-  }
-
-  const texture = new CanvasTexture(canvas);
-  const material = new SpriteMaterial({ map: texture });
-  const sprite = new Sprite(material);
-  sprite.scale.set(0.3, 0.15, 1);
-
-  return sprite;
 }
