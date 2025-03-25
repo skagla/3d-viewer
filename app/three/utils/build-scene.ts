@@ -33,8 +33,9 @@ let overlayCamera: OrthographicCamera;
 let overlayScene: Scene;
 let overlayWidth = 200;
 let overlayHeight = 200;
+let maxSize = 0;
 export function buildScene(container: HTMLElement, extent: Extent) {
-  const maxSize = getMaxSize(extent);
+  maxSize = getMaxSize(extent);
   const center = getCenter3D(extent);
 
   const width = container.clientWidth;
@@ -88,17 +89,14 @@ export function buildScene(container: HTMLElement, extent: Extent) {
     overlayWidth / 2,
     overlayHeight / 2,
     -overlayHeight / 2,
-    1,
+    0.1,
     10 * maxSize
   );
 
   // Position the camera similarly to how you did with PerspectiveCamera
   overlayCamera.position.copy(camera.position);
   overlayCamera.up.copy(camera.up);
-  overlayCamera.lookAt(
-    camera.position.clone().add(camera.getWorldDirection(new Vector3()))
-  );
-  overlayCamera.updateProjectionMatrix();
+  overlayCamera.lookAt(center);
 
   // Create the AxesHelper
   axesHelper = new AxesHelper(maxSize);
@@ -134,6 +132,14 @@ function renderOverlay() {
   // Update the overlay camera position and orientation to match the main camera
   overlayCamera.position.copy(camera.position);
   overlayCamera.rotation.copy(camera.rotation);
+
+  const dir = new Vector3();
+  overlayCamera.getWorldDirection(dir);
+  axesHelper.position.set(
+    camera.position.x + maxSize * dir.x,
+    camera.position.y + maxSize * dir.y,
+    camera.position.z + maxSize * dir.z
+  );
 
   // Render the overlay scene to the screen (position it in the bottom left)
   const width = 200;
