@@ -139,7 +139,7 @@ function generateTextCanvas(text: string) {
   return canvas;
 }
 
-function createLines(pointPairs: Vector3[][]) {
+export function createLines(pointPairs: Vector3[][]) {
   const lines = [];
 
   for (const pair of pointPairs) {

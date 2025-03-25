@@ -14,10 +14,18 @@ import {
   Sprite,
   Euler,
   Color,
+  Matrix4,
+  Vector3,
+  Quaternion,
+  SphereGeometry,
+  MeshBasicMaterial,
+  Mesh,
 } from "three";
 
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { getCenter3D, getMaxSize } from "./utils";
+import { createLines } from "./build-coordinate-grid";
+import { max } from "d3";
 
 export interface Extent {
   xmin: number;
@@ -33,8 +41,10 @@ let renderer: WebGLRenderer;
 let camera: PerspectiveCamera;
 let scene: Scene;
 let axesHelper: AxesHelper;
-let uiCamera: Camera;
-let uiScene: Scene;
+let overlayCamera: OrthographicCamera;
+let overlayScene: Scene;
+let overlayWidth = 200;
+let overlayHeight = 200;
 export function buildScene(container: HTMLElement, extent: Extent) {
   const maxSize = getMaxSize(extent);
   const center = getCenter3D(extent);
@@ -80,26 +90,32 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   // Add lights to the scene
   buildDefaultLights(scene, extent);
 
-  uiScene = new Scene();
+  overlayScene = new Scene();
 
-  // Create an orthographic camera
-  uiCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
-  uiCamera.up.set(0, 0, 1);
-  uiCamera.position.z = 2;
+  // Create an overlay camera
+  overlayWidth = maxSize;
+  overlayHeight = maxSize;
+  overlayCamera = new OrthographicCamera(
+    -overlayWidth / 2,
+    overlayWidth / 2,
+    overlayHeight / 2,
+    -overlayHeight / 2,
+    1,
+    10 * maxSize
+  );
 
-  // Create the AxesHelper (small size)
-  axesHelper = new AxesHelper(0.1);
-  axesHelper.position.set(-0.85, -0.85, 0);
+  // Position the camera similarly to how you did with PerspectiveCamera
+  overlayCamera.position.copy(camera.position);
+  overlayCamera.up.copy(camera.up);
+  overlayCamera.lookAt(
+    camera.position.clone().add(camera.getWorldDirection(new Vector3()))
+  );
+  overlayCamera.updateProjectionMatrix();
 
-  const xLabel = createTextSprite("X", "red");
-  const yLabel = createTextSprite("Y", "green");
-  const zLabel = createTextSprite("Z", "blue");
-  xLabel.position.set(0.125, -0.01, 0);
-  yLabel.position.set(0, 0.125, 0);
-  zLabel.position.set(0, 0, 0.125);
-
-  axesHelper.add(xLabel, yLabel, zLabel);
-  uiScene.add(axesHelper);
+  // Create the AxesHelper
+  axesHelper = new AxesHelper(maxSize);
+  axesHelper.position.set(center.x, center.y, center.z);
+  overlayScene.add(axesHelper);
 
   return { renderer, scene, camera, controls };
 }
@@ -116,22 +132,35 @@ function onWindowResize(container: HTMLElement) {
 }
 
 function animate() {
-  // Set rotation of axes according to camera rotation
-  const rot = new Euler();
-  rot.x = -camera.rotation.x;
-  rot.y = camera.rotation.y;
-  rot.z = -camera.rotation.z;
-  axesHelper.setRotationFromEuler(rot);
+  // Update controls for main camera
+  controls.update();
 
-  renderer.autoClear = true;
+  renderer.autoClear = false;
   renderer.render(scene, camera);
 
-  // Set autoclear to fasle in order to overlay UI elements
-  renderer.autoClear = false;
-  renderer.render(uiScene, uiCamera);
+  renderOverlay();
+}
 
-  // required if controls.enableDamping or controls.autoRotate are set to true
-  controls.update();
+// Render the overlay scene as an overlay
+function renderOverlay() {
+  // Update the overlay camera position and orientation to match the main camera
+  overlayCamera.position.copy(camera.position);
+  overlayCamera.rotation.copy(camera.rotation);
+
+  // Render the overlay scene to the screen (position it in the bottom left)
+  const width = 200;
+  const height = 200;
+  renderer.setScissorTest(true);
+  renderer.setScissor(10, 10, width, height);
+  renderer.setViewport(10, 10, width, height);
+  renderer.render(overlayScene, overlayCamera);
+  renderer.setScissorTest(false); // Disable scissor testing for the rest of the scene
+  renderer.setViewport(
+    0,
+    0,
+    renderer.domElement.width,
+    renderer.domElement.height
+  );
 }
 
 function buildDefaultLights(scene: Scene, extent: Extent) {

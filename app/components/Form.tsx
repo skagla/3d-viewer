@@ -140,7 +140,7 @@ export function Form() {
   const [emptyProfile, setEmptyProfile] = useState<boolean>(false);
   const { sceneView } = useContext(SceneViewContext) as SceneViewContextType;
 
-  function handleChange() {
+  function handleChangeSlicingBox() {
     if (!sceneView) return;
 
     sceneView.toggleClippingBox();
@@ -235,15 +235,11 @@ export function Form() {
         </button>
       </div>
       <div className="border border-gray-200 dark:border-gray-400 rounded grid grid-cols-2 gap-y-2 p-2">
-        <Toggle title="Slicing Box" onChange={handleChange} />
+        <Toggle title="Slicing Box" onChange={handleChangeSlicingBox} />
         <Toggle title="Virtual Profile" onChange={handleDrilling} />
         <Toggle title="Coordinate Grid" onChange={handleChangeCG} />
         <Toggle title="Wireframe" onChange={handleChangeWireframe} />
-        <Toggle
-          title="Topography (OSM)"
-          onChange={handleChangeTopography}
-          defaultChecked
-        />
+        <Toggle title="Topography (OSM)" onChange={handleChangeTopography} />
         <Toggle title="Explode" onChange={handleExplode} />
       </div>
       <div className="px-2 pt-2 border border-gray-200 dark:border-gray-400 rounded">

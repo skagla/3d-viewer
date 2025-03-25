@@ -470,6 +470,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   map.rotateX(Math.PI / 2);
 
   map.name = "topography";
+  map.visible = false;
   scene.add(map);
 
   return { scene, model, dragControls, camera, extent, controls, renderer };
