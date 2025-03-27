@@ -61,6 +61,7 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(width, height);
   renderer.localClippingEnabled = true;
+  renderer.autoClear = false;
   renderer.setAnimationLoop(animate);
 
   // Handle window resize event to adapt the aspect ratio
@@ -82,7 +83,6 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   scene.userData.wireframe = false;
   const backgroundColor = new Color(0xbfd1e5);
   scene.background = backgroundColor;
-  renderer.setClearColor(backgroundColor);
 
   // Add lights to the scene
   buildDefaultLights(scene, extent);
