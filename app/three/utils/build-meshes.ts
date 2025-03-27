@@ -40,9 +40,14 @@ async function buildMesh(layerData: MappedFeature) {
 
   // Transform coordinates to EPSG 3857
   const vertices3857 = new Float32Array(vertices.length);
+
+  // Reduce coordinate precision
   for (let i = 0; i < vertices.length; i += 3) {
     const vertex = Array.from(vertices.slice(i, i + 3));
-    vertices3857.set(transform(vertex), i);
+    vertices3857.set(
+      transform(vertex).map((c) => parseInt(c.toFixed(0))),
+      i
+    );
   }
 
   const positions = new BufferAttribute(vertices3857, 3);

@@ -30,7 +30,12 @@ import {
   OBJExporter,
   OrbitControls,
 } from "three/examples/jsm/Addons.js";
-import { MapTilerProvider, MapView, OpenStreetMapsProvider } from "geo-three";
+import {
+  LODFrustum,
+  MapTilerProvider,
+  MapView,
+  OpenStreetMapsProvider,
+} from "geo-three";
 import { CustomMapHeightNodeShader } from "./CustomMapHeightNodeShader";
 import { Data, createSVG } from "./utils/create-borehole-svg";
 
@@ -361,6 +366,7 @@ export class SceneView extends EventTarget {
       this._extent.zmax = this._model.userData.zmax;
     }
 
+    // Reset clipping box
     const box = this._scene.getObjectByName("clipping-box");
     let visible = false;
     if (box) {
@@ -464,7 +470,10 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   );
 
   // Create the map view for OSM topography
-  const map = new MapView(MapView.PLANAR, provider, heightProvider);
+  const lod = new LODFrustum();
+
+  // @ts-expect-error Type definition for MapView is incorrect - missing parameter for lod
+  const map = new MapView(MapView.PLANAR, provider, heightProvider, lod);
   const customNode = new CustomMapHeightNodeShader(undefined, map);
   map.setRoot(customNode);
   map.rotateX(Math.PI / 2);

@@ -6,10 +6,15 @@ import {
   DirectionalLight,
   Group,
   Object3D,
-  AxesHelper,
   OrthographicCamera,
   Color,
   Vector3,
+  BufferGeometry,
+  BufferAttribute,
+  DoubleSide,
+  Mesh,
+  MeshBasicMaterial,
+  ConeGeometry,
 } from "three";
 
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -28,12 +33,13 @@ let controls: OrbitControls;
 let renderer: WebGLRenderer;
 let camera: PerspectiveCamera;
 let scene: Scene;
-let axesHelper: AxesHelper;
 let overlayCamera: OrthographicCamera;
 let overlayScene: Scene;
-let overlayWidth = 200;
-let overlayHeight = 200;
 let maxSize = 0;
+const compass = new Group();
+const UI_WIDTH = 200;
+const UI_HEIGHT = 200;
+
 export function buildScene(container: HTMLElement, extent: Extent) {
   maxSize = getMaxSize(extent);
   const center = getCenter3D(extent);
@@ -63,8 +69,8 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   container.appendChild(renderer.domElement);
 
   controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(center.x, center.y, center.z); // Focus on the center
-  controls.enableDamping = true; // Smooth camera movement
+  controls.target.set(center.x, center.y, center.z);
+  controls.enableDamping = true;
   controls.dampingFactor = 0.1;
   controls.maxDistance = maxSize * 3;
   controls.minDistance = maxSize / 5;
@@ -74,34 +80,32 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   // Set wireframe to false on initial load
   scene = new Scene();
   scene.userData.wireframe = false;
-  scene.background = new Color(0xbfd1e5);
+  const backgroundColor = new Color(0xbfd1e5);
+  scene.background = backgroundColor;
+  renderer.setClearColor(backgroundColor);
 
   // Add lights to the scene
   buildDefaultLights(scene, extent);
 
+  // Create Scene for UI overlay
   overlayScene = new Scene();
 
   // Create an overlay camera
-  overlayWidth = maxSize;
-  overlayHeight = maxSize;
   overlayCamera = new OrthographicCamera(
-    -overlayWidth / 2,
-    overlayWidth / 2,
-    overlayHeight / 2,
-    -overlayHeight / 2,
+    -maxSize / 2,
+    maxSize / 2,
+    maxSize / 2,
+    -maxSize / 2,
     0.1,
     10 * maxSize
   );
 
-  // Position the camera similarly to how you did with PerspectiveCamera
+  // Sync overlay camera with main camera
   overlayCamera.position.copy(camera.position);
-  overlayCamera.up.copy(camera.up);
-  overlayCamera.lookAt(center);
+  overlayCamera.rotation.copy(camera.rotation);
 
-  // Create the AxesHelper
-  axesHelper = new AxesHelper(maxSize);
-  axesHelper.position.set(center.x, center.y, center.z);
-  overlayScene.add(axesHelper);
+  // Create compass
+  createCompass(center);
 
   return { renderer, scene, camera, controls };
 }
@@ -121,32 +125,31 @@ function animate() {
   // Update controls for main camera
   controls.update();
 
-  renderer.autoClear = false;
   renderer.render(scene, camera);
 
+  // Render the UI overlay
   renderOverlay();
 }
 
 // Render the overlay scene as an overlay
 function renderOverlay() {
-  // Update the overlay camera position and orientation to match the main camera
+  // Sync overlay camera
   overlayCamera.position.copy(camera.position);
   overlayCamera.rotation.copy(camera.rotation);
 
+  // Sync compass
   const dir = new Vector3();
-  overlayCamera.getWorldDirection(dir);
-  axesHelper.position.set(
+  camera.getWorldDirection(dir);
+  compass.position.set(
     camera.position.x + maxSize * dir.x,
     camera.position.y + maxSize * dir.y,
     camera.position.z + maxSize * dir.z
   );
 
   // Render the overlay scene to the screen (position it in the bottom left)
-  const width = 200;
-  const height = 200;
   renderer.setScissorTest(true);
-  renderer.setScissor(10, 10, width, height);
-  renderer.setViewport(10, 10, width, height);
+  renderer.setScissor(10, 10, UI_WIDTH, UI_HEIGHT);
+  renderer.setViewport(10, 10, UI_WIDTH, UI_HEIGHT);
   renderer.render(overlayScene, overlayCamera);
   renderer.setScissorTest(false); // Disable scissor testing for the rest of the scene
   renderer.setViewport(
@@ -193,4 +196,61 @@ function buildDefaultLights(scene: Scene, extent: Extent) {
   lightsGroup.name = "lights";
   lightsGroup.add(...lights);
   scene.add(lightsGroup);
+}
+
+function createCompass(center: Vector3) {
+  const vertices = new Float32Array(
+    [
+      [0.2, 0, 0],
+      [0, 1, 0],
+      [-0.2, 0, 0],
+      [-0.2, 0, 0],
+      [0, -1, 0],
+      [0.2, 0, 0],
+    ].flat()
+  );
+  const positions = new BufferAttribute(vertices, 3);
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", positions);
+
+  const colors = new Float32Array([
+    1,
+    12 / 255,
+    0,
+    1,
+    12 / 255,
+    0,
+    1,
+    12 / 255,
+    0,
+    113 / 255,
+    99 / 255,
+    183 / 255,
+    113 / 255,
+    99 / 255,
+    183 / 255,
+    113 / 255,
+    99 / 255,
+    183 / 255,
+  ]);
+  geometry.setAttribute("color", new BufferAttribute(colors, 3));
+
+  const material = new MeshBasicMaterial({
+    side: DoubleSide,
+    vertexColors: true,
+  });
+
+  const needle = new Mesh(geometry, material);
+
+  const coneGeometry = new ConeGeometry(0.1, 0.1, 32);
+  const coneMaterial = new MeshBasicMaterial({ color: 0x444444 });
+  const cone = new Mesh(coneGeometry, coneMaterial);
+  cone.position.z = 0.055;
+  cone.rotateX(Math.PI / 2);
+
+  compass.add(needle, cone);
+  compass.position.copy(center);
+  compass.scale.set(maxSize * 0.5, maxSize * 0.5, maxSize * 0.5);
+  overlayScene.add(compass);
 }
