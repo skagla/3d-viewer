@@ -82,19 +82,24 @@ export class SceneView extends EventTarget {
   }
 
   static async create(container: HTMLElement, modelId: string) {
-    const { scene, model, dragControls, camera, extent, controls, renderer } =
-      await init(container, modelId);
+    const data = await init(container, modelId);
+    if (data) {
+      const { scene, model, dragControls, camera, extent, controls, renderer } =
+        data;
 
-    return new SceneView(
-      scene,
-      model,
-      dragControls,
-      camera,
-      container,
-      extent,
-      controls,
-      renderer
-    );
+      return new SceneView(
+        scene,
+        model,
+        dragControls,
+        camera,
+        container,
+        extent,
+        controls,
+        renderer
+      );
+    } else {
+      return null;
+    }
   }
 
   get scene() {
@@ -407,6 +412,8 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   const modelData = await getMetadata(SERVICE_URL + modelId);
   const mappedFeatures = modelData.mappedfeatures;
   const modelarea = modelData.modelarea;
+
+  if (!mappedFeatures) return null;
 
   // Transfrom extent to EPSG 3857
   const pmin = transform([modelarea.x.min, modelarea.y.min, modelarea.z.min]);

@@ -11,7 +11,7 @@ async function lazyLoad() {
   return SceneView;
 }
 
-export function Map() {
+export function Map({ modelId }: { modelId: string }) {
   const divRef = useRef<HTMLDivElement>(null);
   const { setSceneView } = useContext(SceneViewContext) as SceneViewContextType;
 
@@ -22,7 +22,7 @@ export function Map() {
     async function loadScene() {
       if (divRef.current) {
         const SceneView = await lazyLoad();
-        const _sceneView = await SceneView.create(divRef.current, "20");
+        const _sceneView = await SceneView.create(divRef.current, modelId);
         if (_sceneView) {
           setSceneView(_sceneView);
         }
@@ -36,7 +36,7 @@ export function Map() {
     return () => {
       ignore = true;
     };
-  }, [divRef, setSceneView]);
+  }, [divRef, setSceneView, modelId]);
 
   return (
     <div className="w-full h-full">

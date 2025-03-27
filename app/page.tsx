@@ -3,11 +3,17 @@
 import { Map } from "./components/Map";
 import { Form } from "./components/Form";
 import { SceneViewProvider } from "./providers/scene-view-provider";
-import { useState } from "react";
+import { use, useState } from "react";
 import { ResetView } from "./components/ResetView";
+import { MODEL_ID } from "./three/config";
 
-export default function Home() {
+export default function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
+  const modelId = (use(searchParams).modelId as string) ?? MODEL_ID;
 
   return (
     <main className="h-screen">
@@ -29,7 +35,7 @@ export default function Home() {
               <div className="hidden sm:block absolute top-2 right-2">
                 <ResetView></ResetView>
               </div>
-              <Map></Map>
+              <Map modelId={modelId}></Map>
             </div>
             <div
               className={`fixed sm:static inset-0 flex flex-col gap-1 items-center bg-white dark:bg-gray-700 p-2 sm:border-l border-gray-200 shadow-lg transition-transform duration-300 w-full sm:w-[350px] xl:w-[480px] ${
