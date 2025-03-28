@@ -53,8 +53,7 @@ export function buildClippingplanes(
   orbitControls: OrbitControls,
   extent: Extent,
   meshes: Mesh[],
-  scene: Scene,
-  visible: boolean
+  scene: Scene
 ) {
   // Set current extent to given extent
   currentExtent = { ...extent };
@@ -137,7 +136,12 @@ export function buildClippingplanes(
     }
 
     // Plane is given in Hesse normal form: a * x + b* y + c * y + d = 0, where normal = (a, b, c) and d = d
-    const plane = new Plane(p.normal, p.d);
+    const plane = new Plane(
+      p.normal,
+      p.orientation === Orientation.Z || p.orientation === Orientation.NZ
+        ? scene.scale.z * p.d
+        : p.d
+    );
 
     // Visual representation of the clipping plane
     const planeGeometry = new PlaneGeometry(width, height);
@@ -197,7 +201,6 @@ export function buildClippingplanes(
   const clippingBox = new Group();
   clippingBox.add(planeMeshGroup, edgeMeshGroup);
   clippingBox.name = "clipping-box";
-  clippingBox.visible = visible;
   scene.add(clippingBox);
 
   // Enable DragControls for the clipping planes
@@ -206,8 +209,6 @@ export function buildClippingplanes(
     camera,
     renderer.domElement
   );
-
-  dragControls.enabled = visible;
 
   dragControls.addEventListener("dragstart", () => {
     // Disable OrbitControls when dragging starts
@@ -251,6 +252,7 @@ export function buildClippingplanes(
 
       // Reset position of plane
       plane.constant = orientation === Orientation.Z ? -newZ : newZ;
+      plane.constant = scene.scale.z * plane.constant;
 
       // Update current extent
       if (orientation === Orientation.Z) {
@@ -578,6 +580,7 @@ function generateCapMeshes(
   scene: Scene
 ) {
   const capMeshes: Mesh[] = [];
+  const scaleFactor = scene.scale.z;
 
   // Iterate over the list of geologic meshes
   for (const mesh of meshes) {
@@ -598,17 +601,17 @@ function generateCapMeshes(
       const v1 = new Vector3(
         position[i1],
         position[i1 + 1],
-        position[i1 + 2] + mesh.position.z
+        scaleFactor * (position[i1 + 2] + mesh.position.z)
       );
       const v2 = new Vector3(
         position[i2],
         position[i2 + 1],
-        position[i2 + 2] + mesh.position.z
+        scaleFactor * (position[i2 + 2] + mesh.position.z)
       );
       const v3 = new Vector3(
         position[i3],
         position[i3 + 1],
-        position[i3 + 2] + mesh.position.z
+        scaleFactor * (position[i3 + 2] + mesh.position.z)
       );
 
       // Check if the triangle is cut by the plane
@@ -624,7 +627,12 @@ function generateCapMeshes(
       if (d3 * d1 < 0) intersections.push(intersectEdge(v3, v1, d3, d1));
 
       if (intersections.length === 2) {
-        edges.push([intersections[0], intersections[1]]);
+        // Rescale local coordinates and push to edges
+        const start = intersections[0];
+        const end = intersections[1];
+        start.z = start.z / scaleFactor;
+        end.z = end.z / scaleFactor;
+        edges.push([start, end]);
       }
     }
 
@@ -634,7 +642,13 @@ function generateCapMeshes(
     // Clip cap surfaces with clipping planes
     const clippingPlanes = planes.filter((p) => !p.normal.equals(plane.normal));
 
-    const offset = orientation === Orientation.Z ? 1 : -1;
+    const offset =
+      orientation === Orientation.NX ||
+      orientation === Orientation.NY ||
+      orientation === Orientation.NZ
+        ? 1
+        : -1;
+
     const material = new MeshStandardMaterial({
       color: (mesh.material as MeshStandardMaterial).color,
       side: DoubleSide,

@@ -45,7 +45,6 @@ export type CustomEvent = CustomEventInit<{
 
 export class SceneView extends EventTarget {
   private _scene: Scene;
-  private _dragControls: DragControls;
   private _model: Group;
   private _camera: PerspectiveCamera;
   private _container: HTMLElement;
@@ -57,12 +56,13 @@ export class SceneView extends EventTarget {
   private static _DRAG_THRESHOLD = 5;
   private _callback: EventListenerOrEventListenerObject | null = null;
   private _orbitControls: OrbitControls;
+  private _dragControls: DragControls | null = null;
   private _renderer: WebGLRenderer;
+  private static _DISPLACEMENT = 2000;
 
   constructor(
     scene: Scene,
     model: Group,
-    dragControls: DragControls,
     camera: PerspectiveCamera,
     container: HTMLElement,
     extent: Extent,
@@ -71,7 +71,6 @@ export class SceneView extends EventTarget {
   ) {
     super();
     this._scene = scene;
-    this._dragControls = dragControls;
     this._model = model;
     this._camera = camera;
     this._container = container;
@@ -84,13 +83,11 @@ export class SceneView extends EventTarget {
   static async create(container: HTMLElement, modelId: string) {
     const data = await init(container, modelId);
     if (data) {
-      const { scene, model, dragControls, camera, extent, controls, renderer } =
-        data;
+      const { scene, model, camera, extent, controls, renderer } = data;
 
       return new SceneView(
         scene,
         model,
-        dragControls,
         camera,
         container,
         extent,
@@ -110,17 +107,11 @@ export class SceneView extends EventTarget {
     return this._model;
   }
 
-  toggleClippingBox() {
-    const box = this._scene?.getObjectByName("clipping-box");
-    if (box) {
-      // Set DragControls
-      if (box.visible) {
-        this._dragControls.enabled = false;
-      } else {
-        this._dragControls.enabled = true;
-      }
-
-      box.visible = !box.visible;
+  toggleClippingBox(on = true) {
+    if (on) {
+      this._resetClippingBox();
+    } else {
+      this._removeClippingBoxObjects();
     }
   }
 
@@ -344,56 +335,11 @@ export class SceneView extends EventTarget {
     this._orbitControls.reset();
   }
 
-  explode(explode: boolean) {
-    const DISPLACEMENT = 2000;
-    for (let i = 1; i < this._model.children.length; i++) {
-      const mesh = this._model.children[i];
-
-      if (explode) {
-        const displacement =
-          (this._model.children.length - i - 1) * DISPLACEMENT;
-        mesh.userData.originalPosition = mesh.position.clone();
-        mesh.translateZ(displacement);
-
-        if (i === 1) {
-          this._model.userData.zmax = this._extent.zmax;
-          this._extent.zmax += displacement;
-        }
-      } else {
-        if (mesh.userData.originalPosition) {
-          mesh.position.copy(mesh.userData.originalPosition);
-        }
-      }
-    }
-
-    // Reset extent
-    if (!explode && this._model.userData.zmax) {
-      this._extent.zmax = this._model.userData.zmax;
-    }
-
-    // Reset clipping box
+  private _removeClippingBoxObjects() {
+    // Remove existing boxes
     const box = this._scene.getObjectByName("clipping-box");
-    let visible = false;
     if (box) {
-      visible = box.visible;
       this._scene.remove(box);
-    }
-    const { planes, dragControls } = buildClippingplanes(
-      this._renderer,
-      this._camera,
-      this._orbitControls,
-      this._extent,
-      this._model.children as Mesh[],
-      this._scene,
-      visible
-    );
-
-    this._dragControls.dispose();
-    this._dragControls = dragControls;
-
-    // Add clipping planes to the meshes
-    for (const mesh of this._model.children) {
-      ((mesh as Mesh).material as Material).clippingPlanes = planes;
     }
 
     // Remove existing cap meshes
@@ -405,11 +351,101 @@ export class SceneView extends EventTarget {
         capMeshGroup = this._scene.getObjectByName(capMeshGroupName);
       }
     }
+
+    // Remove drag controls
+    if (this._dragControls) {
+      this._dragControls.dispose();
+      this._dragControls = null;
+    }
+
+    // Remove clipping planes
+    for (const mesh of this._model.children) {
+      ((mesh as Mesh).material as Material).clippingPlanes = null;
+    }
+  }
+
+  // Reset clipping box
+  private _resetClippingBox() {
+    this._removeClippingBoxObjects();
+
+    const { planes, dragControls } = buildClippingplanes(
+      this._renderer,
+      this._camera,
+      this._orbitControls,
+      this._extent,
+      this._model.children as Mesh[],
+      this._scene
+    );
+
+    this._dragControls = dragControls;
+
+    // Add clipping planes to the meshes
+    for (const mesh of this._model.children) {
+      ((mesh as Mesh).material as Material).clippingPlanes = planes;
+    }
+  }
+
+  // Explode meshes
+  explode(explode: boolean) {
+    if (explode) {
+      // Save previous zmax value
+      this._scene.userData.zmax = this._extent.zmax;
+
+      const maxDisplacement =
+        this._model.children.length * SceneView._DISPLACEMENT;
+
+      this._extent.zmax += maxDisplacement;
+    } else {
+      // Reset extent
+      this._extent.zmax = this._scene.userData.zmax;
+    }
+
+    // Reset clipping box
+    const box = this._scene.getObjectByName("clipping-box");
+    if (box && box.visible) {
+      this._resetClippingBox();
+    }
+
+    for (let i = 1; i < this._model.children.length; i++) {
+      const mesh = this._model.children[i];
+
+      if (explode) {
+        const displacement =
+          (this._model.children.length - i - 1) * SceneView._DISPLACEMENT;
+        mesh.userData.originalPosition = mesh.position.clone();
+        mesh.translateZ(displacement);
+      } else {
+        if (mesh.userData.originalPosition) {
+          mesh.position.copy(mesh.userData.originalPosition);
+        }
+      }
+    }
+  }
+
+  // Set z scaling factor
+  setZScale(scale: number) {
+    // Update extent
+    //this._extent = {
+    //  ...this._extent,
+    //  zmin: (scale * this._extent.zmin) / this._scene.scale.z,
+    //  zmax: (scale * this._extent.zmax) / this._scene.scale.z,
+    //};
+
+    // Set scale factor
+    this._scene.scale.set(1, 1, scale);
+
+    // Reset clipping box
+    const box = this._scene.getObjectByName("clipping-box");
+    if (box && box.visible) {
+      this._resetClippingBox();
+    }
   }
 }
 
 async function init(container: HTMLElement, modelId = MODEL_ID) {
   const modelData = await getMetadata(SERVICE_URL + modelId);
+  if (!modelData) return null;
+
   const mappedFeatures = modelData.mappedfeatures;
   const modelarea = modelData.modelarea;
 
@@ -435,23 +471,6 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   model.add(...meshes);
   model.name = "geologic-model";
   scene.add(model);
-
-  // Build the clipping planes and add them to the scene
-  const visible = false;
-  const { planes, dragControls } = buildClippingplanes(
-    renderer,
-    camera,
-    controls,
-    extent,
-    meshes,
-    scene,
-    visible
-  );
-
-  // Add clipping planes to the meshes
-  for (const mesh of meshes) {
-    mesh.material.clippingPlanes = planes;
-  }
 
   // Add a coordinate grid to the scene
   const { gridHelper, annotations } = buildCoordinateGrid(extent);
@@ -489,5 +508,12 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   map.visible = false;
   scene.add(map);
 
-  return { scene, model, dragControls, camera, extent, controls, renderer };
+  return {
+    scene,
+    model,
+    camera,
+    extent,
+    controls,
+    renderer,
+  };
 }

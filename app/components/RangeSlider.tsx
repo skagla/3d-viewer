@@ -14,7 +14,7 @@ export function RangeSlider() {
     const z = parseFloat(t.value);
     if (!isNaN(z)) {
       setScale(z);
-      sceneView.scene.scale.set(1, 1, z);
+      sceneView.setZScale(z);
     }
   };
   return (

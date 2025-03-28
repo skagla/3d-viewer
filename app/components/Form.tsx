@@ -140,10 +140,14 @@ export function Form() {
   const [emptyProfile, setEmptyProfile] = useState<boolean>(false);
   const { sceneView } = useContext(SceneViewContext) as SceneViewContextType;
 
-  function handleChangeSlicingBox() {
+  function handleChangeSlicingBox(e: ChangeEvent<HTMLInputElement>) {
     if (!sceneView) return;
 
-    sceneView.toggleClippingBox();
+    if (e.target.checked) {
+      sceneView.toggleClippingBox(true);
+    } else {
+      sceneView.toggleClippingBox(false);
+    }
   }
 
   function handleChangeCG() {
@@ -217,10 +221,8 @@ export function Form() {
 
     if (e.target.checked) {
       sceneView.explode(true);
-      // setExploded(true);
     } else {
       sceneView.explode(false);
-      // setExploded(false);
     }
   }
 

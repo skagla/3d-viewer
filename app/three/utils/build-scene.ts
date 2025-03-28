@@ -73,7 +73,7 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   controls.target.set(center.x, center.y, center.z);
   controls.enableDamping = true;
   controls.dampingFactor = 0.1;
-  controls.maxDistance = maxSize * 3;
+  controls.maxDistance = maxSize * 5;
   controls.minDistance = maxSize / 5;
   controls.update();
   controls.saveState();
