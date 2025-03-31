@@ -424,13 +424,6 @@ export class SceneView extends EventTarget {
 
   // Set z scaling factor
   setZScale(scale: number) {
-    // Update extent
-    //this._extent = {
-    //  ...this._extent,
-    //  zmin: (scale * this._extent.zmin) / this._scene.scale.z,
-    //  zmax: (scale * this._extent.zmax) / this._scene.scale.z,
-    //};
-
     // Set scale factor
     this._scene.scale.set(1, 1, scale);
 

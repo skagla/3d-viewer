@@ -397,7 +397,7 @@ export function buildClippingplanes(
     // Generate new cap meshes
     const capMeshes = generateCapMeshes(
       meshes,
-      plane,
+      plane.clone(),
       planes,
       orientation,
       scene
@@ -580,7 +580,10 @@ function generateCapMeshes(
   scene: Scene
 ) {
   const capMeshes: Mesh[] = [];
-  const scaleFactor = scene.scale.z;
+
+  // Rescale to local coordinates
+  if (orientation === Orientation.Z || orientation === Orientation.NZ)
+    plane.constant /= scene.scale.z;
 
   // Iterate over the list of geologic meshes
   for (const mesh of meshes) {
@@ -601,17 +604,17 @@ function generateCapMeshes(
       const v1 = new Vector3(
         position[i1],
         position[i1 + 1],
-        scaleFactor * (position[i1 + 2] + mesh.position.z)
+        position[i1 + 2] + mesh.position.z
       );
       const v2 = new Vector3(
         position[i2],
         position[i2 + 1],
-        scaleFactor * (position[i2 + 2] + mesh.position.z)
+        position[i2 + 2] + mesh.position.z
       );
       const v3 = new Vector3(
         position[i3],
         position[i3 + 1],
-        scaleFactor * (position[i3 + 2] + mesh.position.z)
+        position[i3 + 2] + mesh.position.z
       );
 
       // Check if the triangle is cut by the plane
@@ -627,11 +630,8 @@ function generateCapMeshes(
       if (d3 * d1 < 0) intersections.push(intersectEdge(v3, v1, d3, d1));
 
       if (intersections.length === 2) {
-        // Rescale local coordinates and push to edges
         const start = intersections[0];
         const end = intersections[1];
-        start.z = start.z / scaleFactor;
-        end.z = end.z / scaleFactor;
         edges.push([start, end]);
       }
     }
