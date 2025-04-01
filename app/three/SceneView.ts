@@ -5,7 +5,6 @@ import {
   MeshBasicMaterial,
   MeshPhongMaterial,
   MeshStandardMaterial,
-  Object3D,
   PerspectiveCamera,
   Plane,
   Raycaster,
@@ -18,7 +17,7 @@ import {
 import { buildMeshes } from "./utils/build-meshes";
 import { Extent, buildScene } from "./utils/build-scene";
 import { getMetadata, transform } from "./utils/utils";
-import { MAPTILER_API_KEY, MODEL_ID, SERVICE_URL } from "./config";
+import { MODEL_ID, SERVICE_URL } from "./config";
 import {
   Orientation,
   buildClippingplanes,
@@ -33,15 +32,12 @@ import {
   OrbitControls,
 } from "three/examples/jsm/Addons.js";
 import {
-  LODFrustum,
   LODRaycast,
   MapPlaneNode,
-  MapTilerProvider,
   MapView,
   OpenStreetMapsProvider,
   UnitsUtils,
 } from "geo-three";
-import { CustomMapHeightNodeShader } from "./CustomMapHeightNodeShader";
 import { Data, createSVG } from "./utils/create-borehole-svg";
 import { TileData, updateTiles } from "./ShaderMaterial";
 
@@ -487,12 +483,12 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
 
   // Create a map tiles provider object
   const provider = new OpenStreetMapsProvider();
-  const heightProvider = new MapTilerProvider(
-    MAPTILER_API_KEY,
-    "tiles",
-    "terrain-rgb",
-    "png"
-  );
+  //const heightProvider = new MapTilerProvider(
+  //  MAPTILER_API_KEY,
+  //  "tiles",
+  //  "terrain-rgb",
+  //  "png"
+  //);
 
   // Create the map view for OSM topography
   const lod = new LODRaycast();
