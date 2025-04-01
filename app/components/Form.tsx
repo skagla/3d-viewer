@@ -259,9 +259,9 @@ export function Form() {
             <div className="flex flex-col gap-2">
               {sceneView?.model.children.map((child) => {
                 const key = `toggle-visibility-${child.name}`;
-                const color = `#${(
-                  (child as Mesh).material as MeshStandardMaterial
-                ).color.getHexString()}`;
+                //const color = `#${(
+                //  (child as Mesh).material as MeshStandardMaterial
+                //).color.getHexString()}`;
                 const visible = (child as Mesh).visible;
 
                 return (
@@ -272,7 +272,7 @@ export function Form() {
                     <span
                       className="inline-block w-5 h-5 flex-none rounded"
                       style={{
-                        backgroundColor: color,
+                        backgroundColor: "white",
                       }}
                     ></span>
                     <input

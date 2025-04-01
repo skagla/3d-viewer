@@ -3,7 +3,9 @@ import {
   Material,
   Mesh,
   MeshBasicMaterial,
+  MeshPhongMaterial,
   MeshStandardMaterial,
+  Object3D,
   PerspectiveCamera,
   Plane,
   Raycaster,
@@ -32,12 +34,16 @@ import {
 } from "three/examples/jsm/Addons.js";
 import {
   LODFrustum,
+  LODRaycast,
+  MapPlaneNode,
   MapTilerProvider,
   MapView,
   OpenStreetMapsProvider,
+  UnitsUtils,
 } from "geo-three";
 import { CustomMapHeightNodeShader } from "./CustomMapHeightNodeShader";
 import { Data, createSVG } from "./utils/create-borehole-svg";
+import { TileData, updateTiles } from "./ShaderMaterial";
 
 export type CustomEvent = CustomEventInit<{
   element: SVGSVGElement | null;
@@ -489,17 +495,54 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   );
 
   // Create the map view for OSM topography
-  const lod = new LODFrustum();
+  const lod = new LODRaycast();
 
-  // @ts-expect-error Type definition for MapView is incorrect - missing parameter for lod
-  const map = new MapView(MapView.PLANAR, provider, heightProvider, lod);
-  const customNode = new CustomMapHeightNodeShader(undefined, map);
-  map.setRoot(customNode);
+  const map = new MapView(MapView.PLANAR, provider);
+  map.lod = lod;
+  // const customNode = new CustomMapHeightNodeShader(undefined, map);
+  // map.setRoot(customNode);
   map.rotateX(Math.PI / 2);
 
   map.name = "topography";
   map.visible = false;
   scene.add(map);
+
+  controls.addEventListener("change", () => {
+    const tiles: TileData[] = [];
+    function traverse(node: MapPlaneNode) {
+      if (node.isMesh) {
+        const bounds = UnitsUtils.tileBounds(node.level, node.x, node.y);
+
+        const xmin = bounds[0];
+        const ymin = bounds[2];
+        const xmax = xmin + bounds[1];
+        const ymax = ymin + bounds[3];
+
+        if (
+          (extent.xmax >= xmin && extent.ymax >= ymin) ||
+          (extent.xmin <= xmax && extent.ymax >= ymin) ||
+          (extent.xmin <= xmax && extent.ymin <= ymax) ||
+          (extent.xmax >= xmin && extent.ymin <= ymax)
+        ) {
+          tiles.push({
+            xmin,
+            ymin,
+            xmax,
+            ymax,
+            texture: (node.material as MeshPhongMaterial).map,
+          });
+        }
+      }
+      for (const c of node.children) {
+        traverse(c as MapPlaneNode);
+      }
+    }
+
+    map.lod.updateLOD(map, camera, renderer, scene);
+    traverse(map.root);
+
+    updateTiles(tiles.reverse());
+  });
 
   return {
     scene,

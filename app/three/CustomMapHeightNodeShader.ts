@@ -112,7 +112,7 @@ export class CustomMapHeightNodeShader extends MapHeightNode {
     };
 
     material.onBeforeCompile = (shader) => {
-      // Pass uniforms from userData to the
+      // Pass uniforms from userData
       for (const i in material.userData) {
         shader.uniforms[i] = material.userData[i];
       }

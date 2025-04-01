@@ -61,7 +61,7 @@ async function buildMesh(layerData: MappedFeature) {
   const material = new MeshStandardMaterial({
     color: color,
     metalness: 0.0,
-    roughness: 1.0,
+    roughness: 5.0,
     flatShading: true,
     side: DoubleSide,
     wireframe: false,
