@@ -1,14 +1,23 @@
-import { ShaderMaterial, Texture, Vector4 } from "three";
+import {
+  DataArrayTexture,
+  LinearFilter,
+  RGBAFormat,
+  ShaderChunk,
+  ShaderMaterial,
+  Texture,
+  Vector4,
+} from "three";
 
 export interface TileData {
   xmin: number;
   ymin: number;
   xmax: number;
   ymax: number;
-  texture: Texture | null;
+  zoom: number;
+  texture: Texture;
 }
 
-const maxTiles = 16;
+const maxTiles = 24;
 
 // Initialize empty texture slots
 const dummyTexture = new Texture();
@@ -18,25 +27,39 @@ dummyTexture.needsUpdate = true;
 // Create shader material
 export const shaderMaterial = new ShaderMaterial({
   uniforms: {
-    tileTextures: { value: Array(maxTiles).fill(dummyTexture) },
     tileBounds: { value: Array(maxTiles).fill(new Vector4(0, 0, 0, 0)) },
     tileCount: { value: 0 },
+    tiles: { value: null },
   },
-  vertexShader: `
+  vertexShader:
+    ShaderChunk.common +
+    "\n" +
+    ShaderChunk.logdepthbuf_pars_vertex +
+    `
         varying vec3 vWorldPosition;
-        void main() {
-            vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
-            gl_Position = projectionMatrix * viewMatrix * vec4(vWorldPosition, 1.0);
-        }
-    `,
-  fragmentShader: `
-        uniform sampler2D tileTextures[${maxTiles}];
-        uniform vec4 tileBounds[${maxTiles}];
-        uniform int tileCount;
-        varying vec3 vWorldPosition;
+        varying float fragDepth;
 
         void main() {
-            vec4 color = vec4(1.0, 1.0, 1.0, 1.0); // Default color
+            vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            fragDepth = (gl_Position.z / gl_Position.w + 1.0) * 0.5;
+        
+    ` +
+    ShaderChunk.logdepthbuf_vertex +
+    `
+  }
+`,
+  fragmentShader:
+    ShaderChunk.logdepthbuf_pars_fragment +
+    `
+        uniform vec4 tileBounds[${maxTiles}];
+        uniform int tileCount;
+        uniform sampler2DArray tiles;
+        varying vec3 vWorldPosition;
+        varying float fragDepth;
+
+        void main() {
+            vec4 color = vec4(191.0/255.0, 209.0/255.0, 229.0/255.0, 1.0); // Default color
 
             for (int i = 0; i < ${maxTiles}; i++) {
                 if (i >= tileCount) break; // Only process available tiles
@@ -47,32 +70,20 @@ export const shaderMaterial = new ShaderMaterial({
                     vWorldPosition.y >= bounds.z && vWorldPosition.y <= bounds.w) {
                     
                     vec2 uv = (vWorldPosition.xy - bounds.xz) / (bounds.yw - bounds.xz);
-                    switch (i) {
-                      case 0: color = texture2D(tileTextures[0], uv); break;
-                      case 1: color = texture2D(tileTextures[1], uv); break;
-                      case 2: color = texture2D(tileTextures[2], uv); break;
-                      case 3: color = texture2D(tileTextures[3], uv); break;
-                      case 4: color = texture2D(tileTextures[4], uv); break;
-                      case 5: color = texture2D(tileTextures[5], uv); break;
-                      case 6: color = texture2D(tileTextures[6], uv); break;
-                      case 7: color = texture2D(tileTextures[7], uv); break;
-                      case 8: color = texture2D(tileTextures[8], uv); break;
-                      case 9: color = texture2D(tileTextures[9], uv); break;
-                      case 10: color = texture2D(tileTextures[10], uv); break;
-                      case 11: color = texture2D(tileTextures[11], uv); break;
-                      case 12: color = texture2D(tileTextures[12], uv); break;
-                      case 13: color = texture2D(tileTextures[13], uv); break;
-                      case 14: color = texture2D(tileTextures[14], uv); break;
-                      case 15: color = texture2D(tileTextures[15], uv); break;
-                    }
+                    uv = vec2(uv.x, 1.0 - uv.y);
+                    color = texture2D(tiles, vec3(uv, i));
 
-                  break; // Stop checking once we find the correct tile
+                    break; // Stop checking once we find the correct tile
                 }
               }
 
             gl_FragColor = color;
-        }
-    `,
+            gl_FragDepth = fragDepth;
+    ` +
+    ShaderChunk.logdepthbuf_fragment +
+    `
+  }
+`,
 });
 
 export function updateTiles(newTiles: TileData[]) {
@@ -92,7 +103,53 @@ export function updateTiles(newTiles: TileData[]) {
   }
 
   // Update shader uniforms
-  shaderMaterial.uniforms.tileTextures.value = textures;
   shaderMaterial.uniforms.tileBounds.value = bounds;
   shaderMaterial.uniforms.tileCount.value = newTiles.length;
+  shaderMaterial.uniforms.tiles.value = createDataArrayTexture(textures);
+}
+
+// Create a buffer with color data
+const width = 256;
+const height = 256;
+const size = width * height;
+function createDataArrayTexture(textures: Texture[]) {
+  const depth = textures.length;
+
+  const data = new Uint8Array(4 * size * depth);
+
+  for (let i = 0; i < depth; i++) {
+    const texture = textures[i];
+    const imageData = getImageData(texture);
+
+    if (imageData) {
+      data.set(imageData, i * size * 4);
+    }
+  }
+
+  // Use the buffer to create a DataArrayTexture
+  const texture = new DataArrayTexture(data, width, height, depth);
+  texture.format = RGBAFormat;
+  texture.generateMipmaps = false;
+  texture.magFilter = LinearFilter;
+  texture.minFilter = LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+// Create a canvas and draw the image on it
+const canvas = new OffscreenCanvas(width, height);
+const ctx = canvas.getContext("2d");
+function getImageData(texture: Texture) {
+  const image = texture.source.data;
+
+  // Draw the image onto the canvas
+  if (ctx) {
+    ctx.drawImage(image, 0, 0);
+
+    // Get the pixel data from the canvas
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    return imageData.data;
+  } else {
+    return null;
+  }
 }

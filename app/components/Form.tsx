@@ -166,6 +166,7 @@ export function Form() {
     if (!sceneView) return;
 
     sceneView.toggleLayerVisibility(name);
+    sceneView.dispatchChangeEvent();
   }
 
   function handleChangeTopography() {
@@ -259,9 +260,12 @@ export function Form() {
             <div className="flex flex-col gap-2">
               {sceneView?.model.children.map((child) => {
                 const key = `toggle-visibility-${child.name}`;
-                const color = `#${(
-                  (child as Mesh).material as MeshStandardMaterial
-                ).color.getHexString()}`;
+                let color = "transparent";
+                if ((child as Mesh).material instanceof MeshStandardMaterial) {
+                  color = `#${(
+                    (child as Mesh).material as MeshStandardMaterial
+                  ).color.getHexString()}`;
+                }
                 const visible = (child as Mesh).visible;
 
                 return (

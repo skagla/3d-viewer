@@ -8,6 +8,7 @@ import {
 
 import { fetchVertices, fetchTriangleIndices, transform } from "./utils";
 import { TRIANGLE_INDICES_URL, VERTICES_URL } from "../config";
+import { shaderMaterial } from "../ShaderMaterial";
 
 interface MappedFeature {
   featuregeom_id: number;
@@ -60,14 +61,17 @@ async function buildMesh(layerData: MappedFeature) {
 
   const material = new MeshStandardMaterial({
     color: color,
-    metalness: 0.0,
-    roughness: 5.0,
+    metalness: 0.1,
+    roughness: 0.5,
     flatShading: true,
     side: DoubleSide,
     wireframe: false,
   });
 
-  const mesh = new Mesh(geometry, material);
+  const mesh = new Mesh(
+    geometry,
+    name === "Topography" ? shaderMaterial : material
+  );
   mesh.name = name;
   mesh.userData.layerId = geomId;
   mesh.castShadow = true;

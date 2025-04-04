@@ -1,10 +1,13 @@
 import {
+  Frustum,
   Group,
   Material,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   MeshPhongMaterial,
   MeshStandardMaterial,
+  Object3D,
   PerspectiveCamera,
   Plane,
   Raycaster,
@@ -16,7 +19,12 @@ import {
 } from "three";
 import { buildMeshes } from "./utils/build-meshes";
 import { Extent, buildScene } from "./utils/build-scene";
-import { getMetadata, transform } from "./utils/utils";
+import {
+  getFrustumIntersections,
+  getMetadata,
+  tileBounds,
+  transform,
+} from "./utils/utils";
 import { MODEL_ID, SERVICE_URL } from "./config";
 import {
   Orientation,
@@ -32,11 +40,11 @@ import {
   OrbitControls,
 } from "three/examples/jsm/Addons.js";
 import {
+  LODFrustum,
   LODRaycast,
   MapPlaneNode,
   MapView,
   OpenStreetMapsProvider,
-  UnitsUtils,
 } from "geo-three";
 import { Data, createSVG } from "./utils/create-borehole-svg";
 import { TileData, updateTiles } from "./ShaderMaterial";
@@ -435,6 +443,10 @@ export class SceneView extends EventTarget {
       this._resetClippingBox();
     }
   }
+
+  dispatchChangeEvent() {
+    this._orbitControls.dispatchEvent({ type: "change" });
+  }
 }
 
 async function init(container: HTMLElement, modelId = MODEL_ID) {
@@ -483,20 +495,12 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
 
   // Create a map tiles provider object
   const provider = new OpenStreetMapsProvider();
-  //const heightProvider = new MapTilerProvider(
-  //  MAPTILER_API_KEY,
-  //  "tiles",
-  //  "terrain-rgb",
-  //  "png"
-  //);
 
   // Create the map view for OSM topography
-  const lod = new LODRaycast();
+  const lod = new LODFrustum();
 
   const map = new MapView(MapView.PLANAR, provider);
   map.lod = lod;
-  // const customNode = new CustomMapHeightNodeShader(undefined, map);
-  // map.setRoot(customNode);
   map.rotateX(Math.PI / 2);
 
   map.name = "topography";
@@ -505,39 +509,15 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
 
   controls.addEventListener("change", () => {
     const tiles: TileData[] = [];
-    function traverse(node: MapPlaneNode) {
-      if (node.isMesh) {
-        const bounds = UnitsUtils.tileBounds(node.level, node.x, node.y);
+    camera.updateMatrix();
 
-        const xmin = bounds[0];
-        const ymin = bounds[2];
-        const xmax = xmin + bounds[1];
-        const ymax = ymin + bounds[3];
-
-        if (
-          (extent.xmax >= xmin && extent.ymax >= ymin) ||
-          (extent.xmin <= xmax && extent.ymax >= ymin) ||
-          (extent.xmin <= xmax && extent.ymin <= ymax) ||
-          (extent.xmax >= xmin && extent.ymin <= ymax)
-        ) {
-          tiles.push({
-            xmin,
-            ymin,
-            xmax,
-            ymax,
-            texture: (node.material as MeshPhongMaterial).map,
-          });
-        }
-      }
-      for (const c of node.children) {
-        traverse(c as MapPlaneNode);
-      }
-    }
+    const frustumPoints = getFrustumIntersections(camera);
 
     map.lod.updateLOD(map, camera, renderer, scene);
-    traverse(map.root);
+    traverse(map.root, extent, tiles, frustumPoints);
+    tiles.sort((a, b) => b.zoom - a.zoom);
 
-    updateTiles(tiles.reverse());
+    updateTiles(tiles);
   });
 
   return {
@@ -548,4 +528,49 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
     controls,
     renderer,
   };
+}
+
+function traverse(
+  node: MapPlaneNode,
+  extent: Extent,
+  tiles: TileData[],
+  frustumPoints: Vector3[]
+) {
+  const bounds = tileBounds(node.level, node.x, node.y);
+
+  const xmin = bounds[0];
+  const ymin = bounds[2];
+  const xmax = xmin + bounds[1];
+  const ymax = ymin + bounds[3];
+
+  if (
+    ((xmax >= extent.xmin && xmax <= extent.xmax) ||
+      (xmin >= extent.xmin && xmin <= extent.xmax)) &&
+    ((ymax >= extent.ymin && ymax <= extent.ymax) ||
+      (ymin >= extent.ymin && ymin <= extent.ymax))
+  ) {
+    if (
+      frustumPoints.length < 2 ||
+      (((xmax >= frustumPoints[0].x && xmax <= frustumPoints[1].x) ||
+        (xmin >= frustumPoints[0].x && xmin <= frustumPoints[1].x)) &&
+        ((ymax >= frustumPoints[0].y && ymax <= frustumPoints[1].y) ||
+          (ymin >= frustumPoints[0].y && ymin <= frustumPoints[1].y)))
+    ) {
+      const texture = (node.material as MeshPhongMaterial).map;
+      if (texture) {
+        tiles.push({
+          xmin,
+          ymin,
+          xmax,
+          ymax,
+          zoom: node.level,
+          texture,
+        });
+      }
+    }
+  }
+
+  for (const c of node.children) {
+    traverse(c as MapPlaneNode, extent, tiles, frustumPoints);
+  }
 }
