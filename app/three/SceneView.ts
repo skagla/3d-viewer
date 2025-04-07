@@ -175,7 +175,7 @@ export class SceneView extends EventTarget {
     const osmTopo = this._scene.getObjectByName("osm-topography");
     const topo = this._scene.getObjectByName("Topography");
     if (osmTopo && topo) {
-      osmTopo.visible = !osmTopo.visible;
+      // osmTopo.visible = !osmTopo.visible;
       topo.visible = !topo.visible;
     }
   }
@@ -509,7 +509,14 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   map.visible = false;
   scene.add(map);
 
-  renderer.setAnimationLoop(animate(rendererCallback(map, extent)));
+  const topography = scene.getObjectByName("Topography") as Mesh;
+  if (topography) {
+    renderer.setAnimationLoop(
+      animate(
+        rendererCallback(camera, renderer, scene, map, extent, topography)
+      )
+    );
+  }
 
   return {
     scene,
@@ -521,9 +528,17 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   };
 }
 
-function rendererCallback(map: MapView, extent: Extent) {
+function rendererCallback(
+  camera: PerspectiveCamera,
+  renderer: WebGLRenderer,
+  scene: Scene,
+  map: MapView,
+  extent: Extent,
+  topography: Mesh
+) {
   return () => {
-    if (map.visible) {
+    if (topography.visible) {
+      map.lod.updateLOD(map, camera, renderer, scene);
       const tiles: TileData[] = [];
       traverse(map.root, extent, tiles);
       tiles.sort((a, b) => b.zoom - a.zoom);
