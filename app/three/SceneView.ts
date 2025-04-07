@@ -15,13 +15,8 @@ import {
   WebGLRenderer,
 } from "three";
 import { buildMeshes } from "./utils/build-meshes";
-import { Extent, buildScene } from "./utils/build-scene";
-import {
-  getFrustumIntersections,
-  getMetadata,
-  tileBounds,
-  transform,
-} from "./utils/utils";
+import { Extent, animate, buildScene } from "./utils/build-scene";
+import { getMetadata, tileBounds, transform } from "./utils/utils";
 import { MODEL_ID, SERVICE_URL } from "./config";
 import {
   Orientation,
@@ -177,8 +172,10 @@ export class SceneView extends EventTarget {
   }
 
   toggleTopography() {
-    const topo = this._scene.getObjectByName("topography");
-    if (topo) {
+    const osmTopo = this._scene.getObjectByName("osm-topography");
+    const topo = this._scene.getObjectByName("Topography");
+    if (osmTopo && topo) {
+      osmTopo.visible = !osmTopo.visible;
       topo.visible = !topo.visible;
     }
   }
@@ -471,7 +468,14 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   // Build the 3D model
   const meshes = await buildMeshes(mappedFeatures);
   const model = new Group();
-  model.add(...meshes);
+  for (const mesh of meshes) {
+    if (mesh.name !== "Topography") {
+      model.add(mesh);
+    } else {
+      // Add the topography as a separate layer
+      scene.add(mesh);
+    }
+  }
   model.name = "geologic-model";
   scene.add(model);
 
@@ -494,27 +498,18 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
 
   // Create the map view for OSM topography
   const lod = new LODFrustum();
+  lod.simplifyDistance = 200;
+  lod.subdivideDistance = 120;
 
   const map = new MapView(MapView.PLANAR, provider);
   map.lod = lod;
   map.rotateX(Math.PI / 2);
 
-  map.name = "topography";
+  map.name = "osm-topography";
   map.visible = false;
   scene.add(map);
 
-  controls.addEventListener("change", () => {
-    const tiles: TileData[] = [];
-    camera.updateMatrix();
-
-    const frustumPoints = getFrustumIntersections(camera);
-
-    map.lod.updateLOD(map, camera, renderer, scene);
-    traverse(map.root, extent, tiles, frustumPoints);
-    tiles.sort((a, b) => b.zoom - a.zoom);
-
-    updateTiles(tiles);
-  });
+  renderer.setAnimationLoop(animate(rendererCallback(map, extent)));
 
   return {
     scene,
@@ -526,12 +521,19 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   };
 }
 
-function traverse(
-  node: MapPlaneNode,
-  extent: Extent,
-  tiles: TileData[],
-  frustumPoints: Vector3[]
-) {
+function rendererCallback(map: MapView, extent: Extent) {
+  return () => {
+    if (map.visible) {
+      const tiles: TileData[] = [];
+      traverse(map.root, extent, tiles);
+      tiles.sort((a, b) => b.zoom - a.zoom);
+
+      updateTiles(tiles);
+    }
+  };
+}
+
+function traverse(node: MapPlaneNode, extent: Extent, tiles: TileData[]) {
   const bounds = tileBounds(node.level, node.x, node.y);
 
   const xmin = bounds[0];
@@ -545,28 +547,22 @@ function traverse(
     ((ymax >= extent.ymin && ymax <= extent.ymax) ||
       (ymin >= extent.ymin && ymin <= extent.ymax))
   ) {
-    if (
-      frustumPoints.length < 2 ||
-      (((xmax >= frustumPoints[0].x && xmax <= frustumPoints[1].x) ||
-        (xmin >= frustumPoints[0].x && xmin <= frustumPoints[1].x)) &&
-        ((ymax >= frustumPoints[0].y && ymax <= frustumPoints[1].y) ||
-          (ymin >= frustumPoints[0].y && ymin <= frustumPoints[1].y)))
-    ) {
-      const texture = (node.material as MeshPhongMaterial).map;
-      if (texture) {
-        tiles.push({
-          xmin,
-          ymin,
-          xmax,
-          ymax,
-          zoom: node.level,
-          texture,
-        });
-      }
+    const texture = (node.material as MeshPhongMaterial).map;
+    if (texture) {
+      tiles.push({
+        xmin,
+        ymin,
+        xmax,
+        ymax,
+        x: node.x,
+        y: node.y,
+        zoom: node.level,
+        texture,
+      });
     }
   }
 
   for (const c of node.children) {
-    traverse(c as MapPlaneNode, extent, tiles, frustumPoints);
+    traverse(c as MapPlaneNode, extent, tiles);
   }
 }

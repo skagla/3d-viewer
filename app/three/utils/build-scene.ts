@@ -62,7 +62,7 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   renderer.setSize(width, height);
   renderer.localClippingEnabled = true;
   renderer.autoClear = false;
-  renderer.setAnimationLoop(animate);
+  // renderer.setAnimationLoop(animate);
 
   // Handle window resize event to adapt the aspect ratio
   window.addEventListener("resize", () => onWindowResize(container));
@@ -121,14 +121,19 @@ function onWindowResize(container: HTMLElement) {
   controls.update();
 }
 
-function animate() {
-  // Update controls for main camera
-  controls.update();
+// Callback for animation loop
+export function animate(cb: () => void) {
+  return () => {
+    // Update controls for main camera
+    controls.update();
 
-  renderer.render(scene, camera);
+    renderer.render(scene, camera);
 
-  // Render the UI overlay
-  renderOverlay();
+    // Render the UI overlay
+    renderOverlay();
+
+    cb();
+  };
 }
 
 // Render the overlay scene as an overlay

@@ -90,9 +90,14 @@ export function tileBounds(zoom: number, x: number, y: number): number[] {
 
 const plane = new Plane(new Vector3(0, 0, 1), 0);
 
-const corners = [new Vector2(-1, -1), new Vector2(1, 1)];
+const corners = [
+  new Vector2(-1, -1),
+  new Vector2(1, 1),
+  new Vector2(-1, 1),
+  new Vector2(1, -1),
+];
 
-export const getFrustumIntersections = (camera: PerspectiveCamera) => {
+export const getFrustumBoundingBox = (camera: PerspectiveCamera) => {
   const points = [];
 
   const raycaster = new Raycaster();
@@ -112,13 +117,13 @@ export const getFrustumIntersections = (camera: PerspectiveCamera) => {
   if (points.length > 1) {
     return [
       new Vector3(
-        Math.min(points[0].x, points[1].x),
-        Math.min(points[0].y, points[1].y),
+        Math.min(points[0].x, points[1].x, points[2].x, points[3].x),
+        Math.min(points[0].y, points[1].y, points[2].y, points[3].y),
         0
       ),
       new Vector3(
-        Math.max(points[0].x, points[1].x),
-        Math.max(points[0].y, points[1].y),
+        Math.max(points[0].x, points[1].x, points[2].x, points[3].x),
+        Math.max(points[0].y, points[1].y, points[2].y, points[3].y),
         0
       ),
     ];

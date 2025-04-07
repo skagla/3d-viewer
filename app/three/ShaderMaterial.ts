@@ -13,23 +13,42 @@ export interface TileData {
   ymin: number;
   xmax: number;
   ymax: number;
+  x: number;
+  y: number;
   zoom: number;
   texture: Texture;
 }
 
-const maxTiles = 24;
+const maxTiles = 48;
+const width = 256;
+const height = 256;
+const size = width * height;
 
-// Initialize empty texture slots
-const dummyTexture = new Texture();
-dummyTexture.image = document.createElement("canvas");
-dummyTexture.needsUpdate = true;
+const canvas = new OffscreenCanvas(width, height);
+const ctx = canvas.getContext("2d");
+
+const tileBounds = Array(maxTiles).fill(new Vector4(0, 0, 0, 0));
+
+const data = new Uint8Array(4 * size * maxTiles);
+const tileCache: {
+  [key: string]: {
+    imageData: Uint8ClampedArray;
+  };
+} = {};
+
+const dataArrayTexture = new DataArrayTexture(data, width, height, maxTiles);
+dataArrayTexture.format = RGBAFormat;
+dataArrayTexture.generateMipmaps = false;
+dataArrayTexture.magFilter = LinearFilter;
+dataArrayTexture.minFilter = LinearFilter;
+dataArrayTexture.needsUpdate = true;
 
 // Create shader material
 export const shaderMaterial = new ShaderMaterial({
   uniforms: {
-    tileBounds: { value: Array(maxTiles).fill(new Vector4(0, 0, 0, 0)) },
-    tileCount: { value: 0 },
-    tiles: { value: null },
+    tileBounds: { value: tileBounds },
+    tileCount: { value: maxTiles },
+    tiles: { value: dataArrayTexture },
   },
   vertexShader:
     ShaderChunk.common +
@@ -91,54 +110,42 @@ export function updateTiles(newTiles: TileData[]) {
     newTiles = newTiles.slice(0, maxTiles);
   }
 
-  const textures = newTiles.map((t) => t.texture);
-  const bounds = newTiles.map(
-    (t) => new Vector4(t.xmin, t.xmax, t.ymin, t.ymax)
-  );
-
-  // Fill remaining slots with dummy data to maintain uniform array size
-  while (textures.length < maxTiles) {
-    textures.push(dummyTexture);
-    bounds.push(new Vector4(0, 0, 0, 0));
+  for (let i = 0; i < newTiles.length; i++) {
+    updateDataArrayTexture(newTiles[i], i);
   }
 
-  // Update shader uniforms
-  shaderMaterial.uniforms.tileBounds.value = bounds;
-  shaderMaterial.uniforms.tileCount.value = newTiles.length;
-  shaderMaterial.uniforms.tiles.value = createDataArrayTexture(textures);
+  dataArrayTexture.needsUpdate = true;
 }
 
-// Create a buffer with color data
-const width = 256;
-const height = 256;
-const size = width * height;
-function createDataArrayTexture(textures: Texture[]) {
-  const depth = textures.length;
+// Update buffer
+function updateDataArrayTexture(tileData: TileData, index: number) {
+  const k = getTileDataKey(tileData);
+  const cachedData = tileCache[k]?.imageData;
 
-  const data = new Uint8Array(4 * size * depth);
-
-  for (let i = 0; i < depth; i++) {
-    const texture = textures[i];
-    const imageData = getImageData(texture);
+  if (cachedData) {
+    tileBounds[index] = getTileBounds(tileData);
+    data.set(cachedData, index * size * 4);
+  } else {
+    const imageData = getImageData(tileData.texture);
 
     if (imageData) {
-      data.set(imageData, i * size * 4);
+      // Update cache and buffer
+      tileCache[k] = { imageData };
+      tileBounds[index] = getTileBounds(tileData);
+      data.set(imageData, index * size * 4);
     }
   }
+}
 
-  // Use the buffer to create a DataArrayTexture
-  const texture = new DataArrayTexture(data, width, height, depth);
-  texture.format = RGBAFormat;
-  texture.generateMipmaps = false;
-  texture.magFilter = LinearFilter;
-  texture.minFilter = LinearFilter;
-  texture.needsUpdate = true;
-  return texture;
+function getTileDataKey(t: TileData) {
+  return `${t.zoom}/${t.x}/${t.y}`;
+}
+
+function getTileBounds(t: TileData) {
+  return new Vector4(t.xmin, t.xmax, t.ymin, t.ymax);
 }
 
 // Create a canvas and draw the image on it
-const canvas = new OffscreenCanvas(width, height);
-const ctx = canvas.getContext("2d");
 function getImageData(texture: Texture) {
   const image = texture.source.data;
 
