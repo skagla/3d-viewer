@@ -129,7 +129,7 @@ export class SceneView extends EventTarget {
 
       if (capMeshGroup) {
         for (const m of capMeshGroup.children) {
-          if (m.name === layerName && m) {
+          if (m && m.name === layerName) {
             m.visible = !m.visible;
           }
         }
@@ -168,13 +168,6 @@ export class SceneView extends EventTarget {
           }
         });
       }
-    }
-  }
-
-  toggleTopography() {
-    const topo = this._scene.getObjectByName("Topography");
-    if (topo) {
-      topo.visible = !topo.visible;
     }
   }
 
@@ -433,10 +426,6 @@ export class SceneView extends EventTarget {
     if (box && box.visible) {
       this._resetClippingBox();
     }
-  }
-
-  dispatchChangeEvent() {
-    this._orbitControls.dispatchEvent({ type: "change" });
   }
 }
 

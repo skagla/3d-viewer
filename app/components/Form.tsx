@@ -166,13 +166,12 @@ export function Form() {
     if (!sceneView) return;
 
     sceneView.toggleLayerVisibility(name);
-    sceneView.dispatchChangeEvent();
   }
 
   function handleChangeTopography() {
     if (!sceneView) return;
 
-    sceneView.toggleTopography();
+    sceneView.toggleLayerVisibility("Topography");
   }
 
   function handleDrilling(e: ChangeEvent) {
