@@ -172,10 +172,8 @@ export class SceneView extends EventTarget {
   }
 
   toggleTopography() {
-    const osmTopo = this._scene.getObjectByName("osm-topography");
     const topo = this._scene.getObjectByName("Topography");
-    if (osmTopo && topo) {
-      // osmTopo.visible = !osmTopo.visible;
+    if (topo) {
       topo.visible = !topo.visible;
     }
   }
@@ -468,14 +466,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   // Build the 3D model
   const meshes = await buildMeshes(mappedFeatures);
   const model = new Group();
-  for (const mesh of meshes) {
-    if (mesh.name !== "Topography") {
-      model.add(mesh);
-    } else {
-      // Add the topography as a separate layer
-      scene.add(mesh);
-    }
-  }
+  model.add(...meshes);
   model.name = "geologic-model";
   scene.add(model);
 
@@ -498,8 +489,8 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
 
   // Create the map view for OSM topography
   const lod = new LODFrustum();
-  lod.simplifyDistance = 200;
-  lod.subdivideDistance = 120;
+  lod.simplifyDistance = 225;
+  lod.subdivideDistance = 80;
 
   const map = new MapView(MapView.PLANAR, provider);
   map.lod = lod;

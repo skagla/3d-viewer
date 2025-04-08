@@ -1,4 +1,5 @@
 import {
+  Color,
   DataArrayTexture,
   LinearFilter,
   RGBAFormat,
@@ -45,10 +46,12 @@ dataArrayTexture.needsUpdate = true;
 
 // Create shader material
 export const shaderMaterial = new ShaderMaterial({
+  clipping: true,
   uniforms: {
     tileBounds: { value: tileBounds },
     tileCount: { value: maxTiles },
     tiles: { value: dataArrayTexture },
+    color: { value: new Color(1, 1, 1) },
   },
   vertexShader:
     ShaderChunk.common +
@@ -58,10 +61,16 @@ export const shaderMaterial = new ShaderMaterial({
         varying vec3 vWorldPosition;
         varying float fragDepth;
 
+        #include <clipping_planes_pars_vertex>
+
         void main() {
+            #include <begin_vertex>
             vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             fragDepth = (gl_Position.z / gl_Position.w + 1.0) * 0.5;
+
+            #include <project_vertex>
+            #include <clipping_planes_vertex>
         
     ` +
     ShaderChunk.logdepthbuf_vertex +
@@ -77,7 +86,11 @@ export const shaderMaterial = new ShaderMaterial({
         varying vec3 vWorldPosition;
         varying float fragDepth;
 
+        #include <clipping_planes_pars_fragment>
+
         void main() {
+            #include <clipping_planes_fragment>
+
             vec4 color = vec4(191.0/255.0, 209.0/255.0, 229.0/255.0, 1.0); // Default color
 
             for (int i = 0; i < ${maxTiles}; i++) {

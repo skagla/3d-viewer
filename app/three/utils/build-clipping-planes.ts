@@ -1,6 +1,7 @@
 import {
   BufferAttribute,
   BufferGeometry,
+  Color,
   DoubleSide,
   EdgesGeometry,
   Group,
@@ -649,8 +650,13 @@ function generateCapMeshes(
         ? 1
         : -1;
 
+    const color =
+      mesh.material instanceof MeshStandardMaterial
+        ? mesh.material.color
+        : new Color(1, 1, 1);
+
     const material = new MeshStandardMaterial({
-      color: (mesh.material as MeshStandardMaterial).color,
+      color,
       side: DoubleSide,
       metalness: 0.0,
       roughness: 1.0,

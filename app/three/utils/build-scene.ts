@@ -37,8 +37,8 @@ let overlayCamera: OrthographicCamera;
 let overlayScene: Scene;
 let maxSize = 0;
 const compass = new Group();
-const UI_WIDTH = 200;
-const UI_HEIGHT = 200;
+const UI_WIDTH = 150;
+const UI_HEIGHT = 150;
 
 export function buildScene(container: HTMLElement, extent: Extent) {
   maxSize = getMaxSize(extent);
@@ -152,11 +152,8 @@ function renderOverlay() {
   );
 
   // Render the overlay scene to the screen (position it in the bottom left)
-  renderer.setScissorTest(true);
-  renderer.setScissor(10, 10, UI_WIDTH, UI_HEIGHT);
   renderer.setViewport(10, 10, UI_WIDTH, UI_HEIGHT);
   renderer.render(overlayScene, overlayCamera);
-  renderer.setScissorTest(false); // Disable scissor testing for the rest of the scene
   renderer.setViewport(
     0,
     0,

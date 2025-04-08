@@ -258,43 +258,47 @@ export function Form() {
         >
           {
             <div className="flex flex-col gap-2">
-              {sceneView?.model.children.map((child) => {
-                const key = `toggle-visibility-${child.name}`;
-                let color = "transparent";
-                if ((child as Mesh).material instanceof MeshStandardMaterial) {
-                  color = `#${(
-                    (child as Mesh).material as MeshStandardMaterial
-                  ).color.getHexString()}`;
-                }
-                const visible = (child as Mesh).visible;
+              {sceneView?.model.children
+                .filter((c) => c.name !== "Topography")
+                .map((child) => {
+                  const key = `toggle-visibility-${child.name}`;
+                  let color = "transparent";
+                  if (
+                    (child as Mesh).material instanceof MeshStandardMaterial
+                  ) {
+                    color = `#${(
+                      (child as Mesh).material as MeshStandardMaterial
+                    ).color.getHexString()}`;
+                  }
+                  const visible = (child as Mesh).visible;
 
-                return (
-                  <div
-                    key={key}
-                    className="flex items-center justify-start gap-2.5 border-b border-gray-200 dark:border-gray-400 py-1 dark:text-gray-400"
-                  >
-                    <span
-                      className="inline-block w-5 h-5 flex-none rounded"
-                      style={{
-                        backgroundColor: color,
-                      }}
-                    ></span>
-                    <input
-                      id={key}
-                      type="checkbox"
-                      onChange={() => handleCheckboxChange(child.name)}
-                      className="hover:cursor-pointer"
-                      defaultChecked={visible ? true : false}
-                    />
-                    <label
-                      htmlFor={key}
-                      className="font-light text-gray-500 dark:text-gray-400"
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-center justify-start gap-2.5 border-b border-gray-200 dark:border-gray-400 py-1 dark:text-gray-400"
                     >
-                      {child.name}
-                    </label>
-                  </div>
-                );
-              })}
+                      <span
+                        className="inline-block w-5 h-5 flex-none rounded"
+                        style={{
+                          backgroundColor: color,
+                        }}
+                      ></span>
+                      <input
+                        id={key}
+                        type="checkbox"
+                        onChange={() => handleCheckboxChange(child.name)}
+                        className="hover:cursor-pointer"
+                        defaultChecked={visible ? true : false}
+                      />
+                      <label
+                        htmlFor={key}
+                        className="font-light text-gray-500 dark:text-gray-400"
+                      >
+                        {child.name}
+                      </label>
+                    </div>
+                  );
+                })}
             </div>
           }
         </Accordion>
