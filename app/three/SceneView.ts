@@ -400,7 +400,7 @@ export class SceneView extends EventTarget {
       this._resetClippingBox();
     }
 
-    for (let i = 1; i < this._model.children.length; i++) {
+    for (let i = 0; i < this._model.children.length; i++) {
       const mesh = this._model.children[i];
 
       if (explode) {
