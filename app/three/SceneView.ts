@@ -490,13 +490,9 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   scene.add(map);
 
   const topography = scene.getObjectByName("Topography") as Mesh;
-  if (topography) {
-    renderer.setAnimationLoop(
-      animate(
-        rendererCallback(camera, renderer, scene, map, extent, topography)
-      )
-    );
-  }
+  renderer.setAnimationLoop(
+    animate(rendererCallback(camera, renderer, scene, map, extent, topography))
+  );
 
   return {
     scene,
@@ -514,10 +510,10 @@ function rendererCallback(
   scene: Scene,
   map: MapView,
   extent: Extent,
-  topography: Mesh
+  topography: Mesh | undefined
 ) {
   return () => {
-    if (topography.visible) {
+    if (topography && topography.visible) {
       map.lod.updateLOD(map, camera, renderer, scene);
       const tiles: TileData[] = [];
       traverse(map.root, extent, tiles);
