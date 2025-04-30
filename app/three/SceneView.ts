@@ -452,12 +452,14 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
 
   const { renderer, scene, camera, controls } = buildScene(container, extent);
 
+  // Start render loop
+  renderer.setAnimationLoop(animate(() => {}));
+
   // Build the 3D model
-  const meshes = await buildMeshes(mappedFeatures);
   const model = new Group();
-  model.add(...meshes);
   model.name = "geologic-model";
   scene.add(model);
+  await buildMeshes(mappedFeatures, model);
 
   // Add a coordinate grid to the scene
   const { gridHelper, annotations } = buildCoordinateGrid(extent);
@@ -489,6 +491,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   map.visible = false;
   scene.add(map);
 
+  // Update render loop to include topography
   const topography = scene.getObjectByName("Topography") as Mesh;
   renderer.setAnimationLoop(
     animate(rendererCallback(camera, renderer, scene, map, extent, topography))

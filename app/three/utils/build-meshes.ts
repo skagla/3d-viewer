@@ -2,6 +2,7 @@ import {
   BufferAttribute,
   BufferGeometry,
   DoubleSide,
+  Group,
   Mesh,
   MeshStandardMaterial,
 } from "three";
@@ -17,18 +18,18 @@ interface MappedFeature {
   preview: { legend_color: string; legend_text: string };
 }
 
-export async function buildMeshes(mappedFeatures: MappedFeature[]) {
-  const meshes = [];
+export async function buildMeshes(
+  mappedFeatures: MappedFeature[],
+  model: Group
+) {
   for (let i = 0; i < mappedFeatures.length; i++) {
     const layerData = mappedFeatures[i];
     const mesh = await buildMesh(layerData);
     if (layerData.name === "Topography") {
       mesh.visible = false;
     }
-    meshes.push(mesh);
+    model.add(mesh);
   }
-
-  return meshes;
 }
 
 async function buildMesh(layerData: MappedFeature) {
