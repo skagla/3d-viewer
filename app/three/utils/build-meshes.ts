@@ -22,14 +22,16 @@ export async function buildMeshes(
   mappedFeatures: MappedFeature[],
   model: Group
 ) {
-  for (let i = 0; i < mappedFeatures.length; i++) {
-    const layerData = mappedFeatures[i];
+  const meshPromises = mappedFeatures.map(async (layerData) => {
     const mesh = await buildMesh(layerData);
     if (layerData.name === "Topography") {
       mesh.visible = false;
     }
+
     model.add(mesh);
-  }
+  });
+
+  await Promise.all(meshPromises);
 }
 
 async function buildMesh(layerData: MappedFeature) {
