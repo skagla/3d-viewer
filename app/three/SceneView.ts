@@ -31,14 +31,10 @@ import {
   OBJExporter,
   OrbitControls,
 } from "three/examples/jsm/Addons.js";
-import {
-  LODFrustum,
-  MapPlaneNode,
-  MapView,
-  OpenStreetMapsProvider,
-} from "geo-three";
+import { LODFrustum, MapPlaneNode, MapView } from "geo-three";
 import { Data, createSVG } from "./utils/create-borehole-svg";
 import { TileData, updateTiles } from "./ShaderMaterial";
+import { HillShadeProvider } from "./HillShadeProvider";
 
 export type CustomEvent = CustomEventInit<{
   element: SVGSVGElement | null;
@@ -476,7 +472,8 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   scene.add(annotationsGroup);
 
   // Create a map tiles provider object
-  const provider = new OpenStreetMapsProvider();
+  // const provider = new OpenStreetMapsProvider();
+  const provider = new HillShadeProvider();
 
   // Create the map view for OSM topography
   const lod = new LODFrustum();

@@ -2,6 +2,7 @@ import {
   Color,
   DataArrayTexture,
   LinearFilter,
+  MultiplyBlending,
   RGBAFormat,
   ShaderChunk,
   ShaderMaterial,
@@ -53,6 +54,10 @@ export const shaderMaterial = new ShaderMaterial({
     tiles: { value: dataArrayTexture },
     color: { value: new Color(1, 1, 1) },
   },
+  transparent: true,
+  depthWrite: false,
+  depthTest: false,
+  blending: MultiplyBlending,
   vertexShader:
     ShaderChunk.common +
     "\n" +

@@ -73,6 +73,7 @@ async function buildMesh(layerData: MappedFeature) {
     geometry,
     name === "Topography" ? shaderMaterial : material
   );
+
   mesh.name = name;
   mesh.userData.layerId = geomId;
   mesh.castShadow = true;

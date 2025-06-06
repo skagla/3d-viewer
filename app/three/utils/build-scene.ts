@@ -81,7 +81,8 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   // Set wireframe to false on initial load
   scene = new Scene();
   scene.userData.wireframe = false;
-  const backgroundColor = new Color(0xbfd1e5);
+  //const backgroundColor = new Color(0xbfd1e5);
+  const backgroundColor = new Color(0x000000);
   scene.background = backgroundColor;
 
   // Add lights to the scene
