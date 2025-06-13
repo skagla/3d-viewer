@@ -3,7 +3,6 @@ import {
   Material,
   Mesh,
   MeshBasicMaterial,
-  MeshPhongMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
   Plane,
@@ -31,10 +30,15 @@ import {
   OBJExporter,
   OrbitControls,
 } from "three/examples/jsm/Addons.js";
-import { LODFrustum, MapPlaneNode, MapView } from "geo-three";
+import {
+  LODFrustum,
+  MapPlaneNode,
+  /* MapTilerProvider,*/ MapView,
+} from "geo-three";
 import { Data, createSVG } from "./utils/create-borehole-svg";
 import { TileData, updateTiles } from "./ShaderMaterial";
 import { HillShadeProvider } from "./HillShadeProvider";
+import { CustomMapNode } from "./CustomMapNode";
 
 export type CustomEvent = CustomEventInit<{
   element: SVGSVGElement | null;
@@ -113,7 +117,7 @@ export class SceneView extends EventTarget {
   }
 
   toggleLayerVisibility(layerName: string) {
-    const mesh = this._model.getObjectByName(layerName);
+    const mesh = this.scene.getObjectByName(layerName);
     if (mesh) {
       mesh.visible = !mesh.visible;
     }
@@ -477,10 +481,19 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
 
   // Create the map view for OSM topography
   const lod = new LODFrustum();
-  lod.simplifyDistance = 225;
-  lod.subdivideDistance = 80;
+  //lod.simplifyDistance = 225;
+  //lod.subdivideDistance = 80;
+  //const MAPTILER_API_KEY = "1JkD1W8u5UM5Tjd8r3Wl";
+  //const heightProvider = new MapTilerProvider(
+  //  MAPTILER_API_KEY,
+  //  "tiles",
+  //  "terrain-rgb",
+  //  "png"
+  //);
 
-  const map = new MapView(MapView.PLANAR, provider);
+  const map = new MapView(MapView.PLANAR, provider /*heightProvider*/);
+  const mapNode = new CustomMapNode(null, map);
+  map.setRoot(mapNode);
   map.lod = lod;
   map.rotateX(Math.PI / 2);
 
@@ -538,7 +551,7 @@ function traverse(node: MapPlaneNode, extent: Extent, tiles: TileData[]) {
     ((ymax >= extent.ymin && ymax <= extent.ymax) ||
       (ymin >= extent.ymin && ymin <= extent.ymax))
   ) {
-    const texture = (node.material as MeshPhongMaterial).map;
+    const texture = (node.material as MeshBasicMaterial).map;
     if (texture) {
       tiles.push({
         xmin,

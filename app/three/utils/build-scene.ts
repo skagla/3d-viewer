@@ -49,7 +49,7 @@ export function buildScene(container: HTMLElement, extent: Extent) {
 
   camera = new PerspectiveCamera(50, width / height, 10, maxSize * 20);
 
-  camera.position.set(center.x, center.y - 200000, extent.zmax + 100000);
+  camera.position.set(center.x, center.y - 250000, extent.zmax + 100000);
   camera.up.set(0, 0, 1);
   camera.lookAt(center);
 
@@ -81,8 +81,8 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   // Set wireframe to false on initial load
   scene = new Scene();
   scene.userData.wireframe = false;
-  //const backgroundColor = new Color(0xbfd1e5);
-  const backgroundColor = new Color(0x000000);
+  const backgroundColor = new Color(0xbfd1e5);
+  //const backgroundColor = new Color(0xffffff);
   scene.background = backgroundColor;
 
   // Add lights to the scene
@@ -187,7 +187,7 @@ function buildDefaultLights(scene: Scene, extent: Extent) {
     lightPosition.z
   );
 
-  // Create a target for the directional light
+  // Create a target for directional lights
   const target = new Object3D();
   target.position.set(center.x, center.y, center.z);
   scene.add(target);

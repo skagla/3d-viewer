@@ -144,7 +144,7 @@ function updateDataArrayTexture(tileData: TileData, index: number) {
     tileBounds[index] = getTileBounds(tileData);
     data.set(cachedData, index * size * 4);
   } else {
-    const imageData = getImageData(tileData.texture);
+    const imageData = getImageData(tileData);
 
     if (imageData) {
       // Update cache and buffer
@@ -164,12 +164,10 @@ function getTileBounds(t: TileData) {
 }
 
 // Create a canvas and draw the image on it
-function getImageData(texture: Texture) {
-  const image = texture.source.data;
-
+function getImageData(tileData: TileData) {
   // Draw the image onto the canvas
   if (ctx) {
-    ctx.drawImage(image, 0, 0);
+    ctx.drawImage(tileData.texture.image, 0, 0);
 
     // Get the pixel data from the canvas
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);

@@ -168,10 +168,11 @@ export function Form() {
     sceneView.toggleLayerVisibility(name);
   }
 
-  function handleChangeTopography() {
+  async function handleChangeTopography() {
+    // Contains a map of all layers
     if (!sceneView) return;
 
-    sceneView.toggleLayerVisibility("Topography");
+    sceneView.toggleLayerVisibility("osm-topography");
   }
 
   function handleDrilling(e: ChangeEvent) {

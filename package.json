@@ -9,11 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@mapbox/point-geometry": "^1.1.0",
+    "@mapbox/vector-tile": "^2.0.3",
     "d3": "^7.9.0",
     "earcut": "^3.0.1",
     "geo-three": "^0.1.15",
-    "maplibre-gl": "^5.5.0",
     "next": "15.2.1",
+    "pbf": "^4.0.1",
     "proj4": "^2.15.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
