@@ -30,7 +30,7 @@ export async function fetchVectorTile(
   resolve: (value: HTMLImageElement) => void
 ) {
   const response = await fetch(
-    `https://gis.geosphere.at/base/ts/20250611_world_topo/${zoom}/${x}/${y}`
+    `https://gis.geosphere.at/base/ts/world_topo/${zoom}/${x}/${y}`
   );
 
   if (response.ok) {
