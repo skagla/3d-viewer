@@ -47,7 +47,7 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   const width = container.clientWidth;
   const height = container.clientHeight;
 
-  camera = new PerspectiveCamera(50, width / height, 10, maxSize * 20);
+  camera = new PerspectiveCamera(50, width / height, 10, maxSize * 20);//
 
   camera.position.set(center.x, center.y - 250000, extent.zmax + 100000);
   camera.up.set(0, 0, 1);

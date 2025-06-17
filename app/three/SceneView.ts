@@ -8,6 +8,7 @@ import {
   Plane,
   Raycaster,
   Scene,
+  ShaderMaterial,
   SphereGeometry,
   Vector2,
   Vector3,
@@ -394,6 +395,8 @@ export class SceneView extends EventTarget {
       this._extent.zmax = this._scene.userData.zmax;
     }
 
+
+
     // Reset clipping box
     const box = this._scene.getObjectByName("clipping-box");
     if (box && box.visible) {
@@ -415,6 +418,36 @@ export class SceneView extends EventTarget {
       }
     }
   }
+
+  // Texture meshes
+  textureMeshes(useTextures: boolean) {
+    //TODO braucht man das? bzw was genau macht das
+    // Set global texture mode data
+    // this._scene.userData.useTextures = !this._scene.userData.useTextures;
+
+    // Set textures for model
+    const model = this._model;
+    model.children.forEach((child) => {
+      const material = (child as Mesh).material as ShaderMaterial;
+      material.uniforms.uUseTexture = { value: useTextures };
+    });
+
+    // Set textures for any existing cap meshes
+    for (const key of Object.values(Orientation)) {
+      const name = `cap-mesh-group-${key}`;
+      const capMeshGroup = this._scene.getObjectByName(name);
+
+      if (capMeshGroup) {
+        capMeshGroup.children.forEach((mesh) => {
+          const material = (mesh as Mesh).material as ShaderMaterial;
+          if (material) {
+            material.uniforms.uUseTexture = { value: useTextures };
+          }
+        });
+      }
+    }
+  }
+
 
   // Set z scaling factor
   setZScale(scale: number) {
@@ -453,7 +486,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   const { renderer, scene, camera, controls } = buildScene(container, extent);
 
   // Start render loop
-  renderer.setAnimationLoop(animate(() => {}));
+  renderer.setAnimationLoop(animate(() => { }));
 
   // Build the 3D model
   const model = new Group();

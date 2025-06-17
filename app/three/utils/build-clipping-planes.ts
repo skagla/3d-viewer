@@ -645,8 +645,8 @@ function generateCapMeshes(
 
     const offset =
       orientation === Orientation.NX ||
-      orientation === Orientation.NY ||
-      orientation === Orientation.NZ
+        orientation === Orientation.NY ||
+        orientation === Orientation.NZ
         ? 1
         : -1;
 
@@ -654,6 +654,12 @@ function generateCapMeshes(
       mesh.material instanceof MeshStandardMaterial
         ? mesh.material.color
         : new Color(1, 1, 1);
+
+    // TODO: change to new shader
+    // const color =
+    //   mesh.material instanceof ShaderMaterial
+    //     ? mesh.material.uniforms.color
+    //     : new Color(1, 1, 1);
 
     const material = new MeshStandardMaterial({
       color,
@@ -666,6 +672,8 @@ function generateCapMeshes(
       polygonOffsetUnits: offset,
       clippingPlanes,
       wireframe: scene.userData.wireframe,
+      // TODO
+      // depthTest: false,
     });
 
     const localMeshes = polygons.map((polygon) => {
