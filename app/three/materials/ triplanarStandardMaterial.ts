@@ -1,30 +1,24 @@
 import {
-    Color,
-    DoubleSide,
-    MeshStandardMaterial,
-    RepeatWrapping,
-    ShaderMaterial,
-    SRGBColorSpace,
-    TextureLoader,
+  Color,
+  DoubleSide,
+  RepeatWrapping,
+  ShaderMaterial,
+  SRGBColorSpace,
+  TextureLoader,
 } from "three";
 
-
 export function buildTriplanarShaderMaterial(color: Color) {
-    // return new MeshStandardMaterial({
-    //     metalness: 0.1,
-    //     roughness: 0.5,
-    //     flatShading: true,
-    //     side: DoubleSide,
-    //     wireframe: false,
-    //     color: new Color().set(color),
-    // })
+  // return new MeshStandardMaterial({
+  //     metalness: 0.1,
+  //     roughness: 0.5,
+  //     flatShading: true,
+  //     side: DoubleSide,
+  //     wireframe: false,
+  //     color: new Color().set(color),
+  // })
 
-
-
-    const material = new ShaderMaterial({
-
-        vertexShader:
-        /*glsl*/`
+  const material = new ShaderMaterial({
+    vertexShader: /*glsl*/ `
         #include <common>
         #include <logdepthbuf_pars_vertex>
 
@@ -43,9 +37,7 @@ export function buildTriplanarShaderMaterial(color: Color) {
         }
         `,
 
-        fragmentShader:
-
-        /*glsl*/ `
+    fragmentShader: /*glsl*/ `
         #include <common>
         #include <logdepthbuf_pars_fragment>
 
@@ -83,24 +75,23 @@ export function buildTriplanarShaderMaterial(color: Color) {
             gl_FragColor = vec4(multipliedColor.xyz, 1.0);
         }
         `,
-        // metalness: 0.1,
-        // roughness: 0.5,
-        // flatShading: true,
-        side: DoubleSide,
-        wireframe: false,
-    });
+    // metalness: 0.1,
+    // roughness: 0.5,
+    // flatShading: true,
+    side: DoubleSide,
+    wireframe: false,
+  });
 
+  material.uniforms.color = { value: color };
 
-    material.uniforms.color = { value: color };
+  const textureLoader = new TextureLoader();
+  const texture = textureLoader.load("/3d-viewer/textures/kalk_5pt_bg-w.jpg");
+  texture.colorSpace = SRGBColorSpace;
+  texture.wrapS = RepeatWrapping;
+  texture.wrapT = RepeatWrapping;
+  material.uniforms.uTexture = { value: texture };
 
-    const textureLoader = new TextureLoader();
-    const texture = textureLoader.load("/3d-viewer/textures/kalk_5pt_bg-w.jpg");
-    texture.colorSpace = SRGBColorSpace;
-    texture.wrapS = RepeatWrapping;
-    texture.wrapT = RepeatWrapping;
-    material.uniforms.uTexture = { value: texture };
+  material.uniforms.uUseTexture = { value: false };
 
-    material.uniforms.uUseTexture = { value: false };
-
-    return material;
+  return material;
 }

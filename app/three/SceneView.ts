@@ -209,13 +209,19 @@ export class SceneView extends EventTarget {
     // Iterate over intersections
     if (intersects.length > 0) {
       const data: Data[] = [];
-      for (let i = 0; i < intersects.length; i += 2) {
-        const depthStart = intersects[i].point.z;
-        const depthEnd = intersects[i + 1].point.z;
+      for (let i = 0; i < intersects.length; i++) {
+        let depthStart, depthEnd;
+        if (i === intersects.length - 1) {
+          depthStart = intersects[i].point.z;
+          depthEnd = intersects[i].point.z;
+        } else {
+          depthStart = intersects[i].point.z;
+          depthEnd = intersects[i + 1].point.z;
+        }
         const name = intersects[i].object.name;
         const color = `#${(
-          (intersects[i].object as Mesh).material as MeshStandardMaterial
-        ).color.getHexString()}`;
+          (intersects[i].object as Mesh).material as ShaderMaterial
+        ).uniforms.color.value.getHexString()}`;
 
         // Avoid duplicate entries, just update the depth information
         const index = data.findIndex((d) => d.name === name);
@@ -395,8 +401,6 @@ export class SceneView extends EventTarget {
       this._extent.zmax = this._scene.userData.zmax;
     }
 
-
-
     // Reset clipping box
     const box = this._scene.getObjectByName("clipping-box");
     if (box && box.visible) {
@@ -448,7 +452,6 @@ export class SceneView extends EventTarget {
     }
   }
 
-
   // Set z scaling factor
   setZScale(scale: number) {
     // Set scale factor
@@ -486,7 +489,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   const { renderer, scene, camera, controls } = buildScene(container, extent);
 
   // Start render loop
-  renderer.setAnimationLoop(animate(() => { }));
+  renderer.setAnimationLoop(animate(() => {}));
 
   // Build the 3D model
   const model = new Group();

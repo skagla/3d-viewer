@@ -1,10 +1,4 @@
-import {
-  BufferAttribute,
-  BufferGeometry,
-  Group,
-  Mesh,
-  Color,
-} from "three";
+import { BufferAttribute, BufferGeometry, Group, Mesh, Color } from "three";
 
 import { fetchVertices, fetchTriangleIndices, transform } from "./utils";
 import { TRIANGLE_INDICES_URL, VERTICES_URL } from "../config";
@@ -62,7 +56,7 @@ async function buildMesh(layerData: MappedFeature) {
 
   //compute vertex normals
   geometry.computeVertexNormals();
-  // geometry.normalizeNormals();
+  geometry.normalizeNormals();
 
   //build triplanar shader material
   const material = buildTriplanarShaderMaterial(new Color().set(color));
