@@ -1,15 +1,15 @@
 import {
   BufferAttribute,
   BufferGeometry,
-  DoubleSide,
   Group,
   Mesh,
-  MeshStandardMaterial,
+  Color,
 } from "three";
 
 import { fetchVertices, fetchTriangleIndices, transform } from "./utils";
 import { TRIANGLE_INDICES_URL, VERTICES_URL } from "../config";
 import { shaderMaterial } from "../ShaderMaterial";
+import { buildTriplanarShaderMaterial } from "../materials/ triplanarStandardMaterial";
 
 interface MappedFeature {
   featuregeom_id: number;
@@ -60,14 +60,12 @@ async function buildMesh(layerData: MappedFeature) {
 
   geometry.setIndex(indices);
 
-  const material = new MeshStandardMaterial({
-    color: color,
-    metalness: 0.1,
-    roughness: 0.5,
-    flatShading: true,
-    side: DoubleSide,
-    wireframe: false,
-  });
+  //compute vertex normals
+  geometry.computeVertexNormals();
+  // geometry.normalizeNormals();
+
+  //build triplanar shader material
+  const material = buildTriplanarShaderMaterial(new Color().set(color));
 
   const mesh = new Mesh(
     geometry,
