@@ -19,6 +19,7 @@ import {
 
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { getCenter3D, getMaxSize } from "./utils";
+import { CSS2DRenderer } from "three/examples/jsm/Addons.js";
 
 export interface Extent {
   xmin: number;
@@ -31,6 +32,7 @@ export interface Extent {
 
 let controls: OrbitControls;
 let renderer: WebGLRenderer;
+let labelRenderer: CSS2DRenderer;
 let camera: PerspectiveCamera;
 let scene: Scene;
 let overlayCamera: OrthographicCamera;
@@ -69,7 +71,20 @@ export function buildScene(container: HTMLElement, extent: Extent) {
 
   container.appendChild(renderer.domElement);
 
-  controls = new OrbitControls(camera, renderer.domElement);
+  //TODO Besprechen
+  //Info Tooltip label renderer
+  labelRenderer = new CSS2DRenderer({});
+  labelRenderer.setSize(width, height);
+  labelRenderer.domElement.style.position = "absolute";
+  labelRenderer.domElement.style.top = "0px";
+  labelRenderer.domElement.className = "label-parent";
+  // canvas?.appendChild(labelRenderer.domElement);
+  container.appendChild(labelRenderer.domElement);
+
+
+  // controls
+  // controls = new OrbitControls(camera, renderer.domElement);
+  controls = new OrbitControls(camera, labelRenderer.domElement);
   controls.target.set(center.x, center.y, center.z);
   controls.enableDamping = true;
   controls.dampingFactor = 0.1;
@@ -108,6 +123,8 @@ export function buildScene(container: HTMLElement, extent: Extent) {
   // Create compass
   createCompass(center);
 
+
+
   return { renderer, scene, camera, controls };
 }
 
@@ -117,6 +134,7 @@ function onWindowResize(container: HTMLElement) {
   camera.aspect = container.clientWidth / container.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(container.clientWidth, container.clientHeight);
+  labelRenderer.setSize(container.clientWidth, container.clientHeight);
 
   // required if controls.enableDamping or controls.autoRotate are set to true
   controls.update();
@@ -129,6 +147,7 @@ export function animate(cb: () => void) {
     controls.update();
 
     renderer.render(scene, camera);
+    labelRenderer.render(scene, camera)
 
     // Render the UI overlay
     renderOverlay();
