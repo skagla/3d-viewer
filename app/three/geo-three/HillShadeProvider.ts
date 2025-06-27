@@ -2,6 +2,7 @@ import { MapProvider } from "geo-three";
 import { VectorTile } from "@mapbox/vector-tile";
 import Protobuf from "pbf";
 import Point from "@mapbox/point-geometry";
+import { ESRI_HILLSHADE_BASE_URL, TOPO_BASE_URL } from "../config";
 
 export class HillShadeProvider extends MapProvider {
   constructor() {
@@ -12,12 +13,11 @@ export class HillShadeProvider extends MapProvider {
     return new Promise((resolve, reject) => {
       const image = document.createElement("img");
       image.onload = function () {
-        //resolve(image);
         fetchVectorTile(zoom, x, y, image, resolve);
       };
       image.onerror = reject;
       image.crossOrigin = "anonymous";
-      image.src = `https://server.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer/tile/${zoom}/${y}/${x}`;
+      image.src = `${ESRI_HILLSHADE_BASE_URL}/${zoom}/${y}/${x}`;
     });
   }
 }
@@ -29,9 +29,7 @@ export async function fetchVectorTile(
   image: HTMLImageElement,
   resolve: (value: HTMLImageElement) => void
 ) {
-  const response = await fetch(
-    `https://gis.geosphere.at/base/ts/world_topo/${zoom}/${x}/${y}`
-  );
+  const response = await fetch(`${TOPO_BASE_URL}/${zoom}/${x}/${y}`);
 
   if (response.ok) {
     const data = await response.arrayBuffer();

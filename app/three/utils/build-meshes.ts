@@ -2,8 +2,8 @@ import { BufferAttribute, BufferGeometry, Group, Mesh, Color } from "three";
 
 import { fetchVertices, fetchTriangleIndices, transform } from "./utils";
 import { TRIANGLE_INDICES_URL, VERTICES_URL } from "../config";
-import { shaderMaterial } from "../ShaderMaterial";
-import { buildTriplanarShaderMaterial } from "../materials/ triplanarStandardMaterial";
+import { shaderMaterial } from "../materials/ShaderMaterial";
+import { buildTriplanarShaderMaterial } from "../materials/TriplanarStandardMaterial";
 
 interface MappedFeature {
   featuregeom_id: number;

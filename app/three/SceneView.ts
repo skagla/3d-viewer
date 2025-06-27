@@ -17,7 +17,7 @@ import {
 } from "three";
 import { buildMeshes } from "./utils/build-meshes";
 import { Extent, animate, buildScene } from "./utils/build-scene";
-import { getMetadata, tileBounds, transform } from "./utils/utils";
+import { getMetadata, transform } from "./utils/utils";
 import { MODEL_ID, SERVICE_URL } from "./config";
 import {
   Orientation,
@@ -33,15 +33,10 @@ import {
   OBJExporter,
   OrbitControls,
 } from "three/examples/jsm/Addons.js";
-import {
-  LODFrustum,
-  MapPlaneNode,
-  /* MapTilerProvider,*/ MapView,
-} from "geo-three";
+import { LODFrustum, MapView } from "geo-three";
 import { Data, createSVG } from "./utils/create-borehole-svg";
-import { TileData, updateTiles } from "./ShaderMaterial";
-import { HillShadeProvider } from "./HillShadeProvider";
-import { CustomMapNode } from "./CustomMapNode";
+import { HillShadeProvider } from "./geo-three/HillShadeProvider";
+import { CustomMapNode } from "./geo-three/CustomMapNode";
 
 export type CustomEvent = CustomEventInit<{
   element: SVGSVGElement | null;
@@ -586,13 +581,6 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   const lod = new LODFrustum();
   //lod.simplifyDistance = 225;
   //lod.subdivideDistance = 80;
-  //const MAPTILER_API_KEY = "1JkD1W8u5UM5Tjd8r3Wl";
-  //const heightProvider = new MapTilerProvider(
-  //  MAPTILER_API_KEY,
-  //  "tiles",
-  //  "terrain-rgb",
-  //  "png"
-  //);
 
   const map = new MapView(MapView.PLANAR, provider /*heightProvider*/);
   const mapNode = new CustomMapNode(null, map);
@@ -605,10 +593,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   scene.add(map);
 
   // Update render loop to include topography
-  const topography = scene.getObjectByName("Topography") as Mesh;
-  renderer.setAnimationLoop(
-    animate(rendererCallback(camera, renderer, scene, map, extent, topography))
-  );
+  renderer.setAnimationLoop(animate(() => {}));
 
   return {
     scene,
@@ -620,58 +605,4 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
     infoLabel: _infoLabel,
     infoDiv: _infoDiv,
   };
-}
-
-function rendererCallback(
-  camera: PerspectiveCamera,
-  renderer: WebGLRenderer,
-  scene: Scene,
-  map: MapView,
-  extent: Extent,
-  topography: Mesh | undefined
-) {
-  return () => {
-    if (topography && topography.visible) {
-      map.lod.updateLOD(map, camera, renderer, scene);
-      const tiles: TileData[] = [];
-      traverse(map.root, extent, tiles);
-      tiles.sort((a, b) => b.zoom - a.zoom);
-
-      updateTiles(tiles);
-    }
-  };
-}
-
-function traverse(node: MapPlaneNode, extent: Extent, tiles: TileData[]) {
-  const bounds = tileBounds(node.level, node.x, node.y);
-
-  const xmin = bounds[0];
-  const ymin = bounds[2];
-  const xmax = xmin + bounds[1];
-  const ymax = ymin + bounds[3];
-
-  if (
-    ((xmax >= extent.xmin && xmax <= extent.xmax) ||
-      (xmin >= extent.xmin && xmin <= extent.xmax)) &&
-    ((ymax >= extent.ymin && ymax <= extent.ymax) ||
-      (ymin >= extent.ymin && ymin <= extent.ymax))
-  ) {
-    const texture = (node.material as MeshBasicMaterial).map;
-    if (texture) {
-      tiles.push({
-        xmin,
-        ymin,
-        xmax,
-        ymax,
-        x: node.x,
-        y: node.y,
-        zoom: node.level,
-        texture,
-      });
-    }
-  }
-
-  for (const c of node.children) {
-    traverse(c as MapPlaneNode, extent, tiles);
-  }
 }
