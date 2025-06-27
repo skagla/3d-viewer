@@ -17,7 +17,6 @@ import {
 import { Color, Mesh, ShaderMaterial } from "three";
 import { CustomEvent } from "../three/SceneView";
 import { RangeSlider } from "./RangeSlider";
-
 function Toggle({
 	title,
 	onChange,
@@ -172,15 +171,28 @@ export function Form() {
 		sceneView.toggleLayerVisibility("osm-topography");
 	}
 
+	//TODO clarify structure and then mb rename
 	function handleDrilling(e: ChangeEvent) {
 		if (!sceneView) return;
 
+		// if ((e.target as HTMLInputElement).checked) {
+		// 	// Enable raycaster with callback to handle svg element
+		// 	sceneView.enableRaycaster(handleSVGCreated);
+		// } else {
+		// 	sceneView.disableRaycaster();
+		// }
+
 		if ((e.target as HTMLInputElement).checked) {
-			// Enable raycaster with callback to handle svg element
-			sceneView.enableRaycaster(handleSVGCreated);
+			// sceneView.setRaycastState(SceneView.RAYCAST_STATE_VIRTUAL_PROFILE);
+			sceneView.setRaycastState(1);
 		} else {
-			sceneView.disableRaycaster();
+			// sceneView.setRaycastState(SceneView.RAYCAST_STATE_INFO);
+			sceneView.setRaycastState(0);
 		}
+	}
+	//TODO Frage: macht man das so?
+	if (sceneView) {
+		sceneView.enableRaycaster(handleSVGCreated);
 	}
 
 	function handleSVGCreated(e: CustomEvent) {

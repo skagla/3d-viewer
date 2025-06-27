@@ -1,4 +1,5 @@
 import {
+  Color,
   Group,
   Material,
   Mesh,
@@ -27,6 +28,7 @@ import {
   buildHeightGrid,
 } from "./utils/build-coordinate-grid";
 import {
+  CSS2DObject,
   DragControls,
   OBJExporter,
   OrbitControls,
@@ -62,6 +64,14 @@ export class SceneView extends EventTarget {
   private _renderer: WebGLRenderer;
   private static _DISPLACEMENT = 2000;
 
+  private _raycastState: number = 0;
+  public static RAYCAST_STATE_INFO = 0;
+  public static RAYCAST_STATE_VIRTUAL_PROFILE = 1;
+
+  //TODO
+  private _infoLabel: CSS2DObject;
+  private _infoDiv: HTMLDivElement;
+
   constructor(
     scene: Scene,
     model: Group,
@@ -69,7 +79,9 @@ export class SceneView extends EventTarget {
     container: HTMLElement,
     extent: Extent,
     orbitControls: OrbitControls,
-    renderer: WebGLRenderer
+    renderer: WebGLRenderer,
+    infoLabel: CSS2DObject,
+    infoDiv: HTMLDivElement
   ) {
     super();
     this._scene = scene;
@@ -80,12 +92,23 @@ export class SceneView extends EventTarget {
     this._extent = extent;
     this._orbitControls = orbitControls;
     this._renderer = renderer;
+    this._infoLabel = infoLabel;
+    this._infoDiv = infoDiv;
   }
 
   static async create(container: HTMLElement, modelId: string) {
     const data = await init(container, modelId);
     if (data) {
-      const { scene, model, camera, extent, controls, renderer } = data;
+      const {
+        scene,
+        model,
+        camera,
+        extent,
+        controls,
+        renderer,
+        infoLabel,
+        infoDiv,
+      } = data;
 
       return new SceneView(
         scene,
@@ -94,7 +117,9 @@ export class SceneView extends EventTarget {
         container,
         extent,
         controls,
-        renderer
+        renderer,
+        infoLabel,
+        infoDiv
       );
     } else {
       return null;
@@ -178,17 +203,39 @@ export class SceneView extends EventTarget {
     const clientRectangle = this._container.getBoundingClientRect();
     pointer.x = (event.clientX / clientRectangle.width) * 2 - 1;
     pointer.y = -(event.clientY / clientRectangle.height) * 2 + 1;
-
+    // console.log(pointer);
     // Raycast from the camera
     this._raycaster.setFromCamera(pointer, this._camera);
 
-    // Intersect with plane
-    const plane = new Plane(new Vector3(0, 0, 1), 0);
-    const worldPoint = new Vector3();
-    this._raycaster.ray.intersectPlane(plane, worldPoint);
+    switch (this._raycastState) {
+      case SceneView.RAYCAST_STATE_INFO:
+        //raycast for info
+        const meshes = this._model.children.filter(
+          (c) => c.name !== "Topography"
+        );
+        const intersects = this._raycaster.intersectObjects(meshes);
+        console.log(intersects);
+        if (intersects.length === 0) break;
 
-    // Cast a vertical ray from above
-    this._castVerticalRay(worldPoint);
+        const x = intersects[0].point.x;
+        const y = intersects[0].point.y;
+        const z = intersects[0].point.z;
+
+        this._infoDiv.textContent = intersects[0].object.name;
+        this._infoLabel.position.set(x, y, z);
+        break;
+
+      case SceneView.RAYCAST_STATE_VIRTUAL_PROFILE:
+        // Intersect with plane
+        //TODO Frage: warum auf plane und nicht direkt auf mesh
+        const plane = new Plane(new Vector3(0, 0, 1), 0);
+        const worldPoint = new Vector3();
+        this._raycaster.ray.intersectPlane(plane, worldPoint);
+
+        // Cast a vertical ray from above
+        this._castVerticalRay(worldPoint);
+        break;
+    }
   }
 
   private _castVerticalRay(targetPosition: Vector3) {
@@ -220,8 +267,9 @@ export class SceneView extends EventTarget {
         }
         const name = intersects[i].object.name;
         const color = `#${(
-          (intersects[i].object as Mesh).material as ShaderMaterial
-        ).uniforms.color.value.getHexString()}`;
+          ((intersects[i].object as Mesh).material as ShaderMaterial).uniforms
+            .color.value as Color
+        ).getHexString()}`;
 
         // Avoid duplicate entries, just update the depth information
         const index = data.findIndex((d) => d.name === name);
@@ -463,6 +511,11 @@ export class SceneView extends EventTarget {
       this._resetClippingBox();
     }
   }
+
+  //Set RaycastState for switching between virtual profile and info-popup
+  setRaycastState(raycastState: number) {
+    this._raycastState = raycastState;
+  }
 }
 
 async function init(container: HTMLElement, modelId = MODEL_ID) {
@@ -511,6 +564,20 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   annotationsGroup.visible = false;
   scene.add(annotationsGroup);
 
+  //Besprechen
+  //Add INFO LABEL
+  const _infoDiv = document.createElement("div");
+  _infoDiv.className = "info-label";
+  _infoDiv.textContent = "TEST";
+  _infoDiv.style.color = "red";
+  _infoDiv.style.backgroundColor = "transparent";
+
+  const _infoLabel = new CSS2DObject(_infoDiv);
+  _infoLabel.position.set(0, 0, 0);
+  _infoLabel.center.set(0, 0);
+
+  scene.add(_infoLabel);
+  console.log(_infoLabel.visible);
   // Create a map tiles provider object
   // const provider = new OpenStreetMapsProvider();
   const provider = new HillShadeProvider();
@@ -550,6 +617,8 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
     extent,
     controls,
     renderer,
+    infoLabel: _infoLabel,
+    infoDiv: _infoDiv,
   };
 }
 
