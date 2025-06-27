@@ -2,7 +2,6 @@ import { BufferAttribute, BufferGeometry, Group, Mesh, Color } from "three";
 
 import { fetchVertices, fetchTriangleIndices, transform } from "./utils";
 import { TRIANGLE_INDICES_URL, VERTICES_URL } from "../config";
-import { shaderMaterial } from "../materials/ShaderMaterial";
 import { buildTriplanarShaderMaterial } from "../materials/TriplanarStandardMaterial";
 
 interface MappedFeature {
@@ -61,10 +60,7 @@ async function buildMesh(layerData: MappedFeature) {
   //build triplanar shader material
   const material = buildTriplanarShaderMaterial(new Color().set(color));
 
-  const mesh = new Mesh(
-    geometry,
-    name === "Topography" ? shaderMaterial : material
-  );
+  const mesh = new Mesh(geometry, material);
 
   mesh.name = name;
   mesh.userData.layerId = geomId;

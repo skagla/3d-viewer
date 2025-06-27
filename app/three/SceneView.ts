@@ -251,13 +251,14 @@ export class SceneView extends EventTarget {
     // Iterate over intersections
     if (intersects.length > 0) {
       const data: Data[] = [];
+      let lastName = "";
+      let depthEnd;
       for (let i = 0; i < intersects.length; i++) {
-        let depthStart, depthEnd;
+        const depthStart = intersects[i].point.z;
+
         if (i === intersects.length - 1) {
-          depthStart = intersects[i].point.z;
-          depthEnd = intersects[i].point.z;
+          depthEnd = depthStart;
         } else {
-          depthStart = intersects[i].point.z;
           depthEnd = intersects[i + 1].point.z;
         }
         const name = intersects[i].object.name;
@@ -266,18 +267,15 @@ export class SceneView extends EventTarget {
             .color.value as Color
         ).getHexString()}`;
 
-        // Avoid duplicate entries, just update the depth information
-        const index = data.findIndex((d) => d.name === name);
-        if (index > -1) {
-          data[index] = {
-            depthStart: data[index].depthStart,
-            depthEnd,
-            name,
-            color,
-          };
+        // Update depthEnd when name is the same
+        const index = data.length === 0 ? 0 : data.length - 1;
+        if (name === lastName) {
+          data[index].depthEnd = depthEnd;
         } else {
           data.push({ depthStart, depthEnd, name, color });
         }
+
+        lastName = name;
       }
 
       const element = createSVG(data, 400, 600, this._extent);
@@ -573,8 +571,8 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
 
   scene.add(_infoLabel);
   console.log(_infoLabel.visible);
+
   // Create a map tiles provider object
-  // const provider = new OpenStreetMapsProvider();
   const provider = new HillShadeProvider();
 
   // Create the map view for OSM topography
@@ -582,7 +580,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   //lod.simplifyDistance = 225;
   //lod.subdivideDistance = 80;
 
-  const map = new MapView(MapView.PLANAR, provider /*heightProvider*/);
+  const map = new MapView(MapView.PLANAR, provider);
   const mapNode = new CustomMapNode(null, map);
   map.setRoot(mapNode);
   map.lod = lod;

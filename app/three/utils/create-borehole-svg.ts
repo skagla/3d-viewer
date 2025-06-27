@@ -33,6 +33,32 @@ export function createSVG(
     .domain([zmax, zmin])
     .range([margin.top, height - margin.bottom]);
 
+  // Define gradient for last bar
+  const defs = svg.append("defs");
+  data.forEach((d, i) => {
+    if (d.depthStart === d.depthEnd) {
+      const grad = defs
+        .append("linearGradient")
+        .attr("id", `fadeGradient-${i}`)
+        .attr("x1", "0%")
+        .attr("y1", "0%")
+        .attr("x2", "0%")
+        .attr("y2", "100%");
+
+      grad
+        .append("stop")
+        .attr("offset", "0%")
+        .attr("stop-color", d.color)
+        .attr("stop-opacity", 1);
+
+      grad
+        .append("stop")
+        .attr("offset", "100%")
+        .attr("stop-color", d.color)
+        .attr("stop-opacity", 0);
+    }
+  });
+
   // Create logical group
   const barGroup = svg.append("g");
 
@@ -43,9 +69,15 @@ export function createSVG(
     .join("rect")
     .attr("x", margin.left)
     .attr("y", (d) => zScale(d.depthStart))
-    .attr("height", (d) => zScale(d.depthEnd) - zScale(d.depthStart))
+    .attr("height", (d) =>
+      d.depthEnd === d.depthStart
+        ? 20
+        : zScale(d.depthEnd) - zScale(d.depthStart)
+    )
     .attr("width", barWidth)
-    .attr("fill", (d) => d.color);
+    .attr("fill", (d, i) =>
+      d.depthStart === d.depthEnd ? `url(#fadeGradient-${i})` : d.color
+    );
 
   // Add labels (formation names)
   barGroup
@@ -53,7 +85,11 @@ export function createSVG(
     .data(data)
     .join("text")
     .attr("x", margin.left + barWidth + 5)
-    .attr("y", (d) => (zScale(d.depthStart) + zScale(d.depthEnd)) / 2)
+    .attr("y", (d) =>
+      d.depthStart === d.depthEnd
+        ? zScale(d.depthStart) + 15
+        : (zScale(d.depthStart) + zScale(d.depthEnd)) / 2
+    )
     .attr("text-anchor", "start")
     .attr("fill", "black")
     .style("font-size", "12px")
@@ -91,7 +127,9 @@ export function createSVG(
     .attr("text-anchor", "end")
     .attr("fill", "black")
     .style("font-size", "12px")
-    .text((d) => `${d.depthStart.toFixed(0)}m`);
+    .text((d) =>
+      d.depthEnd !== d.depthStart ? `${d.depthStart.toFixed(0)}m` : ""
+    );
 
   // Add label for last depth
   svg
