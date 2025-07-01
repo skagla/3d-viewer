@@ -138,10 +138,10 @@ export function Form() {
 
 	const [emptyProfile, setEmptyProfile] = useState<boolean>(false);
 	const { sceneView } = useContext(SceneViewContext) as SceneViewContextType;
+
 	//enable raycaster when scene view is ready
 	useEffect(() => {
 		if (sceneView) {
-			console.log("use effect");
 			sceneView.enableRaycaster(handleSVGCreated);
 		}
 	}, [sceneView]);
@@ -185,7 +185,9 @@ export function Form() {
 	function toggleVirtualProfile(e: ChangeEvent) {
 		if (!sceneView) return;
 
+		//TODO: something with import and SSR is wrong using a static reference
 		if ((e.target as HTMLInputElement).checked) {
+			// console.log(SceneView.RAYCAST_STATE_VIRTUAL_PROFILE);
 			// sceneView.setRaycastState(SceneView.RAYCAST_STATE_VIRTUAL_PROFILE);
 			sceneView.setRaycastState(1);
 		} else {
