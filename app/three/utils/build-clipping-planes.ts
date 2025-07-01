@@ -19,7 +19,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { DragControls, OrbitControls } from "three/examples/jsm/Addons.js";
+import { CSS2DRenderer, DragControls, OrbitControls } from "three/examples/jsm/Addons.js";
 import { Extent } from "./build-scene";
 import earcut from "earcut";
 
@@ -50,6 +50,7 @@ const BUFFER = 500;
 
 export function buildClippingplanes(
   renderer: WebGLRenderer,
+  labelRenderer: CSS2DRenderer,
   camera: PerspectiveCamera,
   orbitControls: OrbitControls,
   extent: Extent,
@@ -208,7 +209,9 @@ export function buildClippingplanes(
   const dragControls = new DragControls(
     planeMeshes,
     camera,
-    renderer.domElement
+    //TODO test label renderer
+    // renderer.domElement
+    labelRenderer.domElement
   );
 
   dragControls.addEventListener("dragstart", () => {

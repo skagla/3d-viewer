@@ -71,19 +71,16 @@ export function buildScene(container: HTMLElement, extent: Extent) {
 
   container.appendChild(renderer.domElement);
 
-  //TODO Besprechen
   //Info Tooltip label renderer
   labelRenderer = new CSS2DRenderer({});
   labelRenderer.setSize(width, height);
   labelRenderer.domElement.style.position = "absolute";
   labelRenderer.domElement.style.top = "0px";
   labelRenderer.domElement.className = "label-parent";
-  // canvas?.appendChild(labelRenderer.domElement);
   container.appendChild(labelRenderer.domElement);
 
 
   // controls
-  // controls = new OrbitControls(camera, renderer.domElement);
   controls = new OrbitControls(camera, labelRenderer.domElement);
   controls.target.set(center.x, center.y, center.z);
   controls.enableDamping = true;
@@ -125,7 +122,7 @@ export function buildScene(container: HTMLElement, extent: Extent) {
 
 
 
-  return { renderer, scene, camera, controls };
+  return { renderer, labelRenderer, scene, camera, controls };
 }
 
 function onWindowResize(container: HTMLElement) {

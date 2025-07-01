@@ -62,7 +62,7 @@ export const shaderMaterial = new ShaderMaterial({
     ShaderChunk.common +
     "\n" +
     ShaderChunk.logdepthbuf_pars_vertex +
-    `
+    /*glsl*/ `
         varying vec3 vWorldPosition;
         varying float fragDepth;
 
@@ -84,7 +84,7 @@ export const shaderMaterial = new ShaderMaterial({
 `,
   fragmentShader:
     ShaderChunk.logdepthbuf_pars_fragment +
-    `
+   /*glsl*/`
         uniform vec4 tileBounds[${maxTiles}];
         uniform int tileCount;
         uniform sampler2DArray tiles;

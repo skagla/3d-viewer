@@ -6,7 +6,6 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
-  Plane,
   Raycaster,
   Scene,
   ShaderMaterial,
@@ -29,6 +28,7 @@ import {
 } from "./utils/build-coordinate-grid";
 import {
   CSS2DObject,
+  CSS2DRenderer,
   DragControls,
   OBJExporter,
   OrbitControls,
@@ -57,6 +57,7 @@ export class SceneView extends EventTarget {
   private _orbitControls: OrbitControls;
   private _dragControls: DragControls | null = null;
   private _renderer: WebGLRenderer;
+  private _labelRederer: CSS2DRenderer;
   private static _DISPLACEMENT = 2000;
 
   private _raycastState: number = 0;
@@ -75,6 +76,7 @@ export class SceneView extends EventTarget {
     extent: Extent,
     orbitControls: OrbitControls,
     renderer: WebGLRenderer,
+    labelRenderer: CSS2DRenderer,
     infoLabel: CSS2DObject,
     infoDiv: HTMLDivElement
   ) {
@@ -87,6 +89,7 @@ export class SceneView extends EventTarget {
     this._extent = extent;
     this._orbitControls = orbitControls;
     this._renderer = renderer;
+    this._labelRederer = labelRenderer;
     this._infoLabel = infoLabel;
     this._infoDiv = infoDiv;
   }
@@ -101,6 +104,7 @@ export class SceneView extends EventTarget {
         extent,
         controls,
         renderer,
+        labelRenderer,
         infoLabel,
         infoDiv,
       } = data;
@@ -113,6 +117,7 @@ export class SceneView extends EventTarget {
         extent,
         controls,
         renderer,
+        labelRenderer,
         infoLabel,
         infoDiv
       );
@@ -402,6 +407,7 @@ export class SceneView extends EventTarget {
 
     const { planes, dragControls } = buildClippingplanes(
       this._renderer,
+      this._labelRederer,
       this._camera,
       this._orbitControls,
       this._extent,
@@ -522,7 +528,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
     zmax: pmax[2],
   };
 
-  const { renderer, scene, camera, controls } = buildScene(container, extent);
+  const { renderer, labelRenderer, scene, camera, controls } = buildScene(container, extent);
 
   // Start render loop
   renderer.setAnimationLoop(animate(() => { }));
@@ -589,6 +595,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
     extent,
     controls,
     renderer,
+    labelRenderer,
     infoLabel: _infoLabel,
     infoDiv: _infoDiv,
   };
