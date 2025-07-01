@@ -198,38 +198,28 @@ export class SceneView extends EventTarget {
     const clientRectangle = this._container.getBoundingClientRect();
     pointer.x = (event.clientX / clientRectangle.width) * 2 - 1;
     pointer.y = -(event.clientY / clientRectangle.height) * 2 + 1;
-    // console.log(pointer);
+
     // Raycast from the camera
     this._raycaster.setFromCamera(pointer, this._camera);
+    const meshes = this._model.children.filter((c) => c.name !== "Topography");
+    const intersects = this._raycaster.intersectObjects(meshes);
 
-    switch (this._raycastState) {
-      case SceneView.RAYCAST_STATE_INFO:
-        //raycast for info
-        const meshes = this._model.children.filter(
-          (c) => c.name !== "Topography"
-        );
-        const intersects = this._raycaster.intersectObjects(meshes);
-        console.log(intersects);
-        if (intersects.length === 0) break;
+    // if raycast got a hit
+    if (intersects.length > 0) {
+      const intersectionObject = intersects[0];
 
-        const x = intersects[0].point.x;
-        const y = intersects[0].point.y;
-        const z = intersects[0].point.z;
+      switch (this._raycastState) {
 
-        this._infoDiv.textContent = intersects[0].object.name;
-        this._infoLabel.position.set(x, y, z);
-        break;
+        case SceneView.RAYCAST_STATE_INFO:
+          this._infoDiv.textContent = intersectionObject.object.name;
+          this._infoLabel.position.set(intersectionObject.point.x, intersectionObject.point.y, intersectionObject.point.z);
+          break;
 
-      case SceneView.RAYCAST_STATE_VIRTUAL_PROFILE:
-        // Intersect with plane
-        //TODO Frage: warum auf plane und nicht direkt auf mesh
-        const plane = new Plane(new Vector3(0, 0, 1), 0);
-        const worldPoint = new Vector3();
-        this._raycaster.ray.intersectPlane(plane, worldPoint);
-
-        // Cast a vertical ray from above
-        this._castVerticalRay(worldPoint);
-        break;
+        case SceneView.RAYCAST_STATE_VIRTUAL_PROFILE:
+          // Cast a vertical ray from above
+          this._castVerticalRay(intersectionObject.point);
+          break;
+      }
     }
   }
 
@@ -535,7 +525,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   const { renderer, scene, camera, controls } = buildScene(container, extent);
 
   // Start render loop
-  renderer.setAnimationLoop(animate(() => {}));
+  renderer.setAnimationLoop(animate(() => { }));
 
   // Build the 3D model
   const model = new Group();
@@ -570,7 +560,6 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   _infoLabel.center.set(0, 0);
 
   scene.add(_infoLabel);
-  console.log(_infoLabel.visible);
 
   // Create a map tiles provider object
   const provider = new HillShadeProvider();
@@ -591,7 +580,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   scene.add(map);
 
   // Update render loop to include topography
-  renderer.setAnimationLoop(animate(() => {}));
+  renderer.setAnimationLoop(animate(() => { }));
 
   return {
     scene,

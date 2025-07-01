@@ -8,6 +8,7 @@ import {
 	useImperativeHandle,
 	useRef,
 	useState,
+	useEffect,
 } from "react";
 
 import {
@@ -17,6 +18,8 @@ import {
 import { Color, Mesh, ShaderMaterial } from "three";
 import { CustomEvent } from "../three/SceneView";
 import { RangeSlider } from "./RangeSlider";
+import { SceneView } from "../three/SceneView";
+
 function Toggle({
 	title,
 	onChange,
@@ -135,6 +138,13 @@ export function Form() {
 
 	const [emptyProfile, setEmptyProfile] = useState<boolean>(false);
 	const { sceneView } = useContext(SceneViewContext) as SceneViewContextType;
+	//enable raycaster when scene view is ready
+	useEffect(() => {
+		if (sceneView) {
+			console.log("use effect");
+			sceneView.enableRaycaster(handleSVGCreated);
+		}
+	}, [sceneView]);
 
 	function handleChangeSlicingBox(e: ChangeEvent<HTMLInputElement>) {
 		if (!sceneView) return;
@@ -172,15 +182,8 @@ export function Form() {
 	}
 
 	//TODO clarify structure and then mb rename
-	function handleDrilling(e: ChangeEvent) {
+	function toggleVirtualProfile(e: ChangeEvent) {
 		if (!sceneView) return;
-
-		// if ((e.target as HTMLInputElement).checked) {
-		// 	// Enable raycaster with callback to handle svg element
-		// 	sceneView.enableRaycaster(handleSVGCreated);
-		// } else {
-		// 	sceneView.disableRaycaster();
-		// }
 
 		if ((e.target as HTMLInputElement).checked) {
 			// sceneView.setRaycastState(SceneView.RAYCAST_STATE_VIRTUAL_PROFILE);
@@ -189,10 +192,6 @@ export function Form() {
 			// sceneView.setRaycastState(SceneView.RAYCAST_STATE_INFO);
 			sceneView.setRaycastState(0);
 		}
-	}
-	//TODO Frage: macht man das so?
-	if (sceneView) {
-		sceneView.enableRaycaster(handleSVGCreated);
 	}
 
 	function handleSVGCreated(e: CustomEvent) {
@@ -262,7 +261,7 @@ export function Form() {
 				/>
 				<Toggle
 					title="Virtual Profile"
-					onChange={handleDrilling}
+					onChange={toggleVirtualProfile}
 				/>
 				<Toggle
 					title="Coordinate Grid"
