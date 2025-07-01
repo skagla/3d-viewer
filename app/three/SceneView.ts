@@ -64,9 +64,11 @@ export class SceneView extends EventTarget {
   public static RAYCAST_STATE_INFO = 0;
   public static RAYCAST_STATE_VIRTUAL_PROFILE = 1;
 
-  //TODO
   private _infoLabel: CSS2DObject;
   private _infoDiv: HTMLDivElement;
+  private _infoName: HTMLDivElement;
+  private _infoCitation: HTMLDivElement;
+  private _mappedFeatures: IMappedFeature[];
 
   constructor(
     scene: Scene,
@@ -78,7 +80,10 @@ export class SceneView extends EventTarget {
     renderer: WebGLRenderer,
     labelRenderer: CSS2DRenderer,
     infoLabel: CSS2DObject,
-    infoDiv: HTMLDivElement
+    infoDiv: HTMLDivElement,
+    infoName: HTMLDivElement,
+    infoCitation: HTMLDivElement,
+    mappedFeatures: IMappedFeature[],
   ) {
     super();
     this._scene = scene;
@@ -92,6 +97,9 @@ export class SceneView extends EventTarget {
     this._labelRederer = labelRenderer;
     this._infoLabel = infoLabel;
     this._infoDiv = infoDiv;
+    this._infoName = infoName;
+    this._infoCitation = infoCitation;
+    this._mappedFeatures = mappedFeatures;
   }
 
   static async create(container: HTMLElement, modelId: string) {
@@ -107,8 +115,12 @@ export class SceneView extends EventTarget {
         labelRenderer,
         infoLabel,
         infoDiv,
+        infoName,
+        infoCitation,
+        mappedFeatures,
       } = data;
-
+      //TODO
+      // console.log(data);
       return new SceneView(
         scene,
         model,
@@ -119,7 +131,10 @@ export class SceneView extends EventTarget {
         renderer,
         labelRenderer,
         infoLabel,
-        infoDiv
+        infoDiv,
+        infoName,
+        infoCitation,
+        mappedFeatures
       );
     } else {
       return null;
@@ -216,7 +231,34 @@ export class SceneView extends EventTarget {
       switch (this._raycastState) {
 
         case SceneView.RAYCAST_STATE_INFO:
-          this._infoDiv.textContent = intersectionObject.object.name;
+
+          //loop through mappedFeatures and find the one with the same name we clicked on and set content of the info Div
+          for (let index = 0; index < this._mappedFeatures.length; index++) {
+            const mappedFeature = this._mappedFeatures[index];
+            if (mappedFeature.name === intersectionObject.object.name) {
+              //set name
+              this._infoName.innerHTML = "";
+              const _infoNameP = document.createElement("h3");
+              _infoNameP.style.color = "black";
+              this._infoName.appendChild(_infoNameP);
+
+              _infoNameP.textContent = "name: " + mappedFeature.name;
+
+              //set citation
+              this._infoCitation.innerHTML = "";
+              const _infoCitationLink = document.createElement("a");
+              _infoCitationLink.style.color = "black";
+              this._infoCitation.appendChild(_infoCitationLink);
+
+              // _infoCitationLink.href = mappedFeature.geologicdescription.citation;
+              _infoCitationLink.href = "http://www.google.com";
+              _infoCitationLink.innerText = "Citation";
+              break;
+            }
+
+          }
+          // this._infoDiv.textContent = intersectionObject.object.name;
+
           this._infoLabel.position.set(intersectionObject.point.x, intersectionObject.point.y, intersectionObject.point.z);
           break;
 
@@ -553,19 +595,35 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   annotationsGroup.visible = false;
   scene.add(annotationsGroup);
 
-  //Besprechen
   //Add INFO LABEL
   const _infoDiv = document.createElement("div");
   _infoDiv.className = "info-label";
-  _infoDiv.textContent = "TEST";
-  _infoDiv.style.color = "red";
-  _infoDiv.style.backgroundColor = "transparent";
+  // _infoDiv.textContent = "TEST";
+  // _infoDiv.style.color = "red";
+  _infoDiv.className = "p-5 border rounded border-gray-200 dark:border-gray-400 bg-white"
+  //  _infoDiv.className="p-5 border border-gray-200 dark:border-gray-400 dark:bg-gray-700"
+  //   _infoDiv.style.backgroundColor = "transparent";
+
+  const _infoName = document.createElement("div");
+  _infoName.className = "info-label-name";
+  _infoName.textContent = "TEST";
+  _infoName.style.color = "black";
+  _infoName.style.backgroundColor = "transparent";
+  _infoDiv.appendChild(_infoName);
+  const _infoCitation = document.createElement("div");
+  _infoCitation.className = "info-label-citation";
+  _infoCitation.textContent = "TEST";
+  _infoCitation.style.color = "black";
+  _infoCitation.style.backgroundColor = "transparent";
+  _infoDiv.appendChild(_infoCitation);
+
 
   const _infoLabel = new CSS2DObject(_infoDiv);
   _infoLabel.position.set(0, 0, 0);
   _infoLabel.center.set(0, 0);
-
+  // console.log(mappedFeatures);
   scene.add(_infoLabel);
+
 
   // Create a map tiles provider object
   const provider = new HillShadeProvider();
@@ -598,5 +656,8 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
     labelRenderer,
     infoLabel: _infoLabel,
     infoDiv: _infoDiv,
+    infoName: _infoName,
+    infoCitation: _infoCitation,
+    mappedFeatures,
   };
 }
