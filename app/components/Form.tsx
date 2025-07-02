@@ -18,7 +18,7 @@ import {
 import { Color, Mesh, ShaderMaterial } from "three";
 import { CustomEvent } from "../three/SceneView";
 import { RangeSlider } from "./RangeSlider";
-import { SceneView } from "../three/SceneView";
+import { TexturePicker } from "./TexturePicker";
 
 function Toggle({
 	title,
@@ -181,7 +181,6 @@ export function Form() {
 		sceneView.toggleLayerVisibility("osm-topography");
 	}
 
-	//TODO clarify structure and then mb rename
 	function toggleVirtualProfile(e: ChangeEvent) {
 		if (!sceneView) return;
 
@@ -323,6 +322,11 @@ export function Form() {
 												style={{
 													backgroundColor: color,
 												}}></span>
+
+											<TexturePicker
+												sceneView={sceneView}
+												childName={child.name}></TexturePicker>
+
 											<input
 												id={key}
 												type="checkbox"

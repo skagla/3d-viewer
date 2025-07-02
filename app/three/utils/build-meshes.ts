@@ -1,22 +1,17 @@
-import { BufferAttribute, BufferGeometry, Group, Mesh, Color } from "three";
+import { BufferAttribute, BufferGeometry, Group, Mesh, Color, Scene } from "three";
 
 import { fetchVertices, fetchTriangleIndices, transform } from "./utils";
 import { TRIANGLE_INDICES_URL, VERTICES_URL } from "../config";
 import { buildTriplanarShaderMaterial } from "../materials/TriplanarStandardMaterial";
 
-interface MappedFeature {
-  featuregeom_id: number;
-  name: string;
-  geologicdescription: { "feature type": string; citation: string | null };
-  preview: { legend_color: string; legend_text: string };
-}
 
 export async function buildMeshes(
   mappedFeatures: MappedFeature[],
-  model: Group
+  model: Group,
+  scene: Scene
 ) {
   for (const mappedFeature of mappedFeatures) {
-    const mesh = await buildMesh(mappedFeature);
+    const mesh = await buildMesh(mappedFeature, scene);
     if (mappedFeature.name === "Topography") {
       mesh.visible = false;
     }
@@ -25,7 +20,7 @@ export async function buildMeshes(
   }
 }
 
-async function buildMesh(layerData: MappedFeature) {
+async function buildMesh(layerData: MappedFeature, scene: Scene) {
   const color = `#${layerData.preview.legend_color}`;
   const name = layerData.preview.legend_text;
   const geomId = layerData.featuregeom_id.toString();
@@ -58,7 +53,7 @@ async function buildMesh(layerData: MappedFeature) {
   geometry.normalizeNormals();
 
   //build triplanar shader material
-  const material = buildTriplanarShaderMaterial(new Color().set(color));
+  const material = buildTriplanarShaderMaterial(new Color().set(color), scene);
 
   const mesh = new Mesh(geometry, material);
 

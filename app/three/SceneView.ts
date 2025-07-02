@@ -68,7 +68,7 @@ export class SceneView extends EventTarget {
   private _infoDiv: HTMLDivElement;
   private _infoName: HTMLDivElement;
   private _infoCitation: HTMLDivElement;
-  private _mappedFeatures: IMappedFeature[];
+  private _mappedFeatures: MappedFeature[];
 
   constructor(
     scene: Scene,
@@ -83,7 +83,7 @@ export class SceneView extends EventTarget {
     infoDiv: HTMLDivElement,
     infoName: HTMLDivElement,
     infoCitation: HTMLDivElement,
-    mappedFeatures: IMappedFeature[],
+    mappedFeatures: MappedFeature[],
   ) {
     super();
     this._scene = scene;
@@ -211,7 +211,9 @@ export class SceneView extends EventTarget {
       }
     }
   }
-
+  private _onClickLink() {
+    console.log("click");
+  }
   private _onPointerClick(event: MouseEvent) {
     // Convert screen position to NDC (-1 to +1 range)
     const pointer = new Vector2();
@@ -247,12 +249,20 @@ export class SceneView extends EventTarget {
               //set citation
               this._infoCitation.innerHTML = "";
               const _infoCitationLink = document.createElement("a");
-              _infoCitationLink.style.color = "black";
-              this._infoCitation.appendChild(_infoCitationLink);
+              _infoCitationLink.style.color = "blue";
 
-              // _infoCitationLink.href = mappedFeature.geologicdescription.citation;
-              _infoCitationLink.href = "http://www.google.com";
+              // _infoCitationLink.setAttribute('href', "http://google.com");
+              // _infoCitationLink.setAttribute('click', '_onClickLink');
+              // this._infoDiv.addEventListener('click', function (ev) {
+              //   ev.stopPropagation();
+              //   console.log("debug");
+
+              // });
+              if (mappedFeature.geologicdescription.citation != null)
+                _infoCitationLink.href = mappedFeature.geologicdescription.citation;
+
               _infoCitationLink.innerText = "Citation";
+              this._infoCitation.appendChild(_infoCitationLink);
               break;
             }
 
@@ -265,6 +275,14 @@ export class SceneView extends EventTarget {
         case SceneView.RAYCAST_STATE_VIRTUAL_PROFILE:
           // Cast a vertical ray from above
           this._castVerticalRay(intersectionObject.point);
+          break;
+      }
+    }
+    //nothing is clicked
+    else {
+      switch (this._raycastState) {
+
+        case SceneView.RAYCAST_STATE_INFO:
           break;
       }
     }
@@ -531,6 +549,34 @@ export class SceneView extends EventTarget {
     }
   }
 
+  textureMesh(useTexture: boolean, meshName: string) {
+    // Set textures for model
+    const model = this._model;
+    model.children.forEach((child) => {
+      if (child.name === meshName) {
+
+        const material = (child as Mesh).material as ShaderMaterial;
+        material.uniforms.uUseTexture = { value: useTexture };
+
+      }
+    });
+
+    // Set textures for any existing cap meshes
+    for (const key of Object.values(Orientation)) {
+      const name = `cap-mesh-group-${key}`;
+      const capMeshGroup = this._scene.getObjectByName(name);
+
+      if (capMeshGroup) {
+        capMeshGroup.children.forEach((mesh) => {
+          const material = (mesh as Mesh).material as ShaderMaterial;
+          if (material) {
+            material.uniforms.uUseTexture = { value: useTexture };
+          }
+        });
+      }
+    }
+  }
+
   // Set z scaling factor
   setZScale(scale: number) {
     // Set scale factor
@@ -579,7 +625,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   const model = new Group();
   model.name = "geologic-model";
   scene.add(model);
-  await buildMeshes(mappedFeatures, model);
+  await buildMeshes(mappedFeatures, model, scene);
 
   // Add a coordinate grid to the scene
   const { gridHelper, annotations } = buildCoordinateGrid(extent);
