@@ -113,6 +113,7 @@ export function buildTriplanarShaderMaterial(color: Color, scene: Scene) {
   texture.wrapT = RepeatWrapping;
   material.uniforms.uTexture = { value: texture };
 
+
   material.uniforms.uUseTexture = { value: false };
   // console.log(scene);
   // console.log(scene.children[1].children[1]);

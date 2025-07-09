@@ -7,9 +7,13 @@ import {
   MeshStandardMaterial,
   PerspectiveCamera,
   Raycaster,
+  RepeatWrapping,
   Scene,
   ShaderMaterial,
   SphereGeometry,
+  SRGBColorSpace,
+  Texture,
+  TextureLoader,
   Vector2,
   Vector3,
   WebGLRenderer,
@@ -37,6 +41,7 @@ import { LODFrustum, MapView } from "geo-three";
 import { Data, createSVG } from "./utils/create-borehole-svg";
 import { HillShadeProvider } from "./geo-three/HillShadeProvider";
 import { CustomMapNode } from "./geo-three/CustomMapNode";
+import { TextureType } from "./utils/TextureType";
 
 export type CustomEvent = CustomEventInit<{
   element: SVGSVGElement | null;
@@ -70,6 +75,12 @@ export class SceneView extends EventTarget {
   private _infoCitation: HTMLDivElement;
   private _mappedFeatures: MappedFeature[];
 
+  //textures
+  private _texture_sand: Texture;
+  private _texture_schotter: Texture;
+  private _texture_kalk: Texture;
+  private _texture_kristallin: Texture;
+
   constructor(
     scene: Scene,
     model: Group,
@@ -100,6 +111,35 @@ export class SceneView extends EventTarget {
     this._infoName = infoName;
     this._infoCitation = infoCitation;
     this._mappedFeatures = mappedFeatures;
+
+    //load Textures
+    const textureLoader = new TextureLoader();
+    // const texture_empty = textureLoader.load("/3d-viewer/textures/white_texture.jpg");
+    this._texture_sand = textureLoader.load("/3d-viewer/textures/sand.jpg");
+    this._texture_schotter = textureLoader.load("/3d-viewer/textures/schotter.jpg");
+    this._texture_kalk = textureLoader.load("/3d-viewer/textures/kalk_5pt_bg-w.jpg");
+    this._texture_kristallin = textureLoader.load("/3d-viewer/textures/kristallin.jpg");
+
+    // texture_empty.colorSpace = SRGBColorSpace;
+    // texture_empty.wrapS = RepeatWrapping;
+    // texture_empty.wrapT = RepeatWrapping;
+
+    this._texture_sand.colorSpace = SRGBColorSpace;
+    this._texture_sand.wrapS = RepeatWrapping;
+    this._texture_sand.wrapT = RepeatWrapping;
+    // console.log(texture_sand);
+    this._texture_schotter.colorSpace = SRGBColorSpace;
+    this._texture_schotter.wrapS = RepeatWrapping;
+    this._texture_schotter.wrapT = RepeatWrapping;
+
+    this._texture_kalk.colorSpace = SRGBColorSpace;
+    this._texture_kalk.wrapS = RepeatWrapping;
+    this._texture_kalk.wrapT = RepeatWrapping;
+
+    this._texture_kristallin.colorSpace = SRGBColorSpace;
+    this._texture_kristallin.wrapS = RepeatWrapping;
+    this._texture_kristallin.wrapT = RepeatWrapping;
+
   }
 
   static async create(container: HTMLElement, modelId: string) {
@@ -549,14 +589,40 @@ export class SceneView extends EventTarget {
     }
   }
 
-  textureMesh(useTexture: boolean, meshName: string) {
+  textureMesh(useTexture: boolean, meshName: string, textureType: TextureType
+  ) {
     // Set textures for model
     const model = this._model;
     model.children.forEach((child) => {
+      const material = (child as Mesh).material as ShaderMaterial;
+
       if (child.name === meshName) {
 
-        const material = (child as Mesh).material as ShaderMaterial;
-        material.uniforms.uUseTexture = { value: useTexture };
+        switch (textureType) {
+          case TextureType.NO_TEXTURE:
+            material.uniforms.uUseTexture = { value: false };
+            break;
+          case TextureType.SAND:
+            console.log(this._texture_sand);
+            material.uniforms.uUseTexture = { value: useTexture };
+            material.uniforms.uTexture = { value: this._texture_sand }
+            break;
+          case TextureType.SCHOTTER:
+            material.uniforms.uUseTexture = { value: useTexture };
+            material.uniforms.uTexture = { value: this._texture_schotter }
+            break;
+          case TextureType.KALK:
+            material.uniforms.uUseTexture = { value: useTexture };
+            material.uniforms.uTexture = { value: this._texture_kalk }
+            break;
+          case TextureType.KRISTALLIN:
+            material.uniforms.uUseTexture = { value: useTexture };
+            material.uniforms.uTexture = { value: this._texture_kristallin }
+            break;
+
+        }
+
+
 
       }
     });
