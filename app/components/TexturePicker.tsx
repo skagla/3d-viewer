@@ -61,7 +61,7 @@ export function TexturePicker(props: {
 		return (
 			<>
 				<span
-					onClick={openTexturePicker}
+					onClick={togggleTexturePicker}
 					className="relative size-5 flex-none rounded bg-gray-400">
 					<div className="absolute size-auto bottom-0 p-1 flex gap-1 border rounded border-gray-200 dark:border-gray-400 bg-white ">
 						{texturePickerEmpty}
@@ -77,7 +77,7 @@ export function TexturePicker(props: {
 		return (
 			<>
 				<span
-					onClick={openTexturePicker}
+					onClick={togggleTexturePicker}
 					className="inline-block w-5 h-5 flex-none rounded">
 					<Image
 						src={srcTextureType}
@@ -91,7 +91,7 @@ export function TexturePicker(props: {
 		);
 	}
 
-	function openTexturePicker() {
+	function togggleTexturePicker() {
 		setShowTexturePopup(!showTexturePopup);
 		// enableTexture();
 	}

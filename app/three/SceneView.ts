@@ -621,11 +621,10 @@ export class SceneView extends EventTarget {
             break;
 
         }
-
-
-
       }
     });
+
+
 
     // Set textures for any existing cap meshes
     for (const key of Object.values(Orientation)) {
@@ -641,6 +640,20 @@ export class SceneView extends EventTarget {
         });
       }
     }
+  }
+
+  colorMesh(meshName: string, color: Color) {
+
+    const model = this._model;
+    model.children.forEach((child) => {
+      // console.log(child.name);
+      // console.log(meshName);
+      if (child.name === meshName) {
+        const material = (child as Mesh).material as ShaderMaterial;
+        material.uniforms.color = { value: color }
+
+      }
+    });
   }
 
   // Set z scaling factor

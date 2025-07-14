@@ -19,6 +19,7 @@ import { Color, Mesh, ShaderMaterial } from "three";
 import { CustomEvent } from "../three/SceneView";
 import { RangeSlider } from "./RangeSlider";
 import { TexturePicker } from "./TexturePicker";
+import { ColorPicker } from "./ColorPicker";
 
 function Toggle({
 	title,
@@ -317,12 +318,15 @@ export function Form() {
 										<div
 											key={key}
 											className="flex items-center justify-start gap-2.5 border-b border-gray-200 dark:border-gray-400 py-1 dark:text-gray-400">
-											<span
+											{/* <span
 												className="inline-block w-5 h-5 flex-none rounded"
 												style={{
 													backgroundColor: color,
-												}}></span>
-
+												}}></span> */}
+											<ColorPicker
+												color={color}
+												sceneView={sceneView}
+												childName={child.name}></ColorPicker>
 											<TexturePicker
 												sceneView={sceneView}
 												childName={child.name}></TexturePicker>
