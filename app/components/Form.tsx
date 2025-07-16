@@ -15,7 +15,7 @@ import {
 	SceneViewContext,
 	SceneViewContextType,
 } from "../providers/scene-view-provider";
-import { Color, Mesh, ShaderMaterial } from "three";
+import { Mesh, MeshStandardMaterial } from "three";
 import { CustomEvent } from "../three/SceneView";
 import { RangeSlider } from "./RangeSlider";
 import { TexturePicker } from "./TexturePicker";
@@ -237,16 +237,6 @@ export function Form() {
 		}
 	}
 
-	function handleTexture(e: ChangeEvent<HTMLInputElement>) {
-		if (!sceneView) return;
-
-		if (e.target.checked) {
-			sceneView.textureMeshes(true);
-		} else {
-			sceneView.textureMeshes(false);
-		}
-	}
-
 	return (
 		<div className="w-full max-h-full min-h-0 flex flex-col gap-2 dark:bg-gray-700">
 			<div className="w-full flex justify-end">
@@ -281,10 +271,6 @@ export function Form() {
 					title="Explode"
 					onChange={handleExplode}
 				/>
-				<Toggle
-					title="Textures"
-					onChange={handleTexture}
-				/>
 			</div>
 			<div className="px-2 pt-2 border border-gray-200 dark:border-gray-400 rounded">
 				<RangeSlider></RangeSlider>
@@ -305,11 +291,12 @@ export function Form() {
 									let color = "transparent";
 
 									// get color for ui
-									if ((child as Mesh).material instanceof ShaderMaterial) {
+									if (
+										(child as Mesh).material instanceof MeshStandardMaterial
+									) {
 										color = `#${(
-											((child as Mesh).material as ShaderMaterial).uniforms
-												.color.value as Color
-										).getHexString()}`;
+											(child as Mesh).material as MeshStandardMaterial
+										).color.getHexString()}`;
 									}
 
 									const visible = (child as Mesh).visible;

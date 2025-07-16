@@ -76,6 +76,7 @@ export class SceneView extends EventTarget {
   private _mappedFeatures: MappedFeature[];
 
   //textures
+  private _texture_empty: Texture;
   private _texture_sand: Texture;
   private _texture_schotter: Texture;
   private _texture_kalk: Texture;
@@ -114,15 +115,15 @@ export class SceneView extends EventTarget {
 
     //load Textures
     const textureLoader = new TextureLoader();
-    // const texture_empty = textureLoader.load("/3d-viewer/textures/white_texture.jpg");
+    this._texture_empty = textureLoader.load("/3d-viewer/textures/white_texture.jpg");
     this._texture_sand = textureLoader.load("/3d-viewer/textures/sand.jpg");
     this._texture_schotter = textureLoader.load("/3d-viewer/textures/schotter.jpg");
     this._texture_kalk = textureLoader.load("/3d-viewer/textures/kalk_5pt_bg-w.jpg");
     this._texture_kristallin = textureLoader.load("/3d-viewer/textures/kristallin.jpg");
 
-    // texture_empty.colorSpace = SRGBColorSpace;
-    // texture_empty.wrapS = RepeatWrapping;
-    // texture_empty.wrapT = RepeatWrapping;
+    this._texture_empty.colorSpace = SRGBColorSpace;
+    this._texture_empty.wrapS = RepeatWrapping;
+    this._texture_empty.wrapT = RepeatWrapping;
 
     this._texture_sand.colorSpace = SRGBColorSpace;
     this._texture_sand.wrapS = RepeatWrapping;
@@ -560,82 +561,65 @@ export class SceneView extends EventTarget {
     }
   }
 
-  // Texture meshes
-  textureMeshes(useTextures: boolean) {
-    //TODO braucht man das? bzw was genau macht das
-    // Set global texture mode data
-    // this._scene.userData.useTextures = !this._scene.userData.useTextures;
 
-    // Set textures for model
-    const model = this._model;
-    model.children.forEach((child) => {
-      const material = (child as Mesh).material as ShaderMaterial;
-      material.uniforms.uUseTexture = { value: useTextures };
-    });
-
-    // Set textures for any existing cap meshes
-    for (const key of Object.values(Orientation)) {
-      const name = `cap-mesh-group-${key}`;
-      const capMeshGroup = this._scene.getObjectByName(name);
-
-      if (capMeshGroup) {
-        capMeshGroup.children.forEach((mesh) => {
-          const material = (mesh as Mesh).material as ShaderMaterial;
-          if (material) {
-            material.uniforms.uUseTexture = { value: useTextures };
-          }
-        });
-      }
-    }
-  }
 
   textureMesh(useTexture: boolean, meshName: string, textureType: TextureType
   ) {
     // Set textures for model
     const model = this._model;
     model.children.forEach((child) => {
-      const material = (child as Mesh).material as ShaderMaterial;
+      // const material = (child as Mesh).material as ShaderMaterial;
+      const material = (child as Mesh).material as MeshStandardMaterial;
 
       if (child.name === meshName) {
-
         switch (textureType) {
           case TextureType.NO_TEXTURE:
-            material.uniforms.uUseTexture = { value: false };
+            material.map = this._texture_empty;
             break;
           case TextureType.SAND:
-            console.log(this._texture_sand);
-            material.uniforms.uUseTexture = { value: useTexture };
-            material.uniforms.uTexture = { value: this._texture_sand }
+            material.map = this._texture_sand;
             break;
           case TextureType.SCHOTTER:
-            material.uniforms.uUseTexture = { value: useTexture };
-            material.uniforms.uTexture = { value: this._texture_schotter }
+            material.map = this._texture_schotter;
             break;
           case TextureType.KALK:
-            material.uniforms.uUseTexture = { value: useTexture };
-            material.uniforms.uTexture = { value: this._texture_kalk }
+            material.map = this._texture_kalk;
             break;
           case TextureType.KRISTALLIN:
-            material.uniforms.uUseTexture = { value: useTexture };
-            material.uniforms.uTexture = { value: this._texture_kristallin }
+            material.map = this._texture_kristallin;
             break;
-
         }
       }
     });
-
-
 
     // Set textures for any existing cap meshes
     for (const key of Object.values(Orientation)) {
       const name = `cap-mesh-group-${key}`;
       const capMeshGroup = this._scene.getObjectByName(name);
 
+      // TODO
       if (capMeshGroup) {
         capMeshGroup.children.forEach((mesh) => {
-          const material = (mesh as Mesh).material as ShaderMaterial;
+          const material = (mesh as Mesh).material as MeshStandardMaterial;
+          console.log(material);
           if (material) {
-            material.uniforms.uUseTexture = { value: useTexture };
+            switch (textureType) {
+              case TextureType.NO_TEXTURE:
+                material.map = this._texture_empty;
+                break;
+              case TextureType.SAND:
+                material.map = this._texture_sand;
+                break;
+              case TextureType.SCHOTTER:
+                material.map = this._texture_schotter;
+                break;
+              case TextureType.KALK:
+                material.map = this._texture_kalk;
+                break;
+              case TextureType.KRISTALLIN:
+                material.map = this._texture_kristallin;
+                break;
+            }
           }
         });
       }
@@ -643,16 +627,15 @@ export class SceneView extends EventTarget {
   }
 
   colorMesh(meshName: string, color: Color) {
-
     const model = this._model;
     model.children.forEach((child) => {
       // console.log(child.name);
       // console.log(meshName);
       if (child.name === meshName) {
-        const material = (child as Mesh).material as ShaderMaterial;
-        material.uniforms.color = { value: color }
-
+        const material = (child as Mesh).material as MeshStandardMaterial;
+        material.color = color;
       }
+
     });
   }
 

@@ -2,7 +2,7 @@ import { BufferAttribute, BufferGeometry, Group, Mesh, Color, Scene } from "thre
 
 import { fetchVertices, fetchTriangleIndices, transform } from "./utils";
 import { TRIANGLE_INDICES_URL, VERTICES_URL } from "../config";
-import { buildTriplanarShaderMaterial } from "../materials/TriplanarStandardMaterial";
+import { TriplanarShaderFactory } from "../materials/TriplanarShaderFactory";
 
 
 export async function buildMeshes(
@@ -53,7 +53,11 @@ async function buildMesh(layerData: MappedFeature, scene: Scene) {
   geometry.normalizeNormals();
 
   //build triplanar shader material
-  const material = buildTriplanarShaderMaterial(new Color().set(color), scene);
+  const material = TriplanarShaderFactory();
+
+  //set color
+  const hexNumber = parseInt(color.replace("#", "0x"), 16);
+  material.color = new Color().setHex(hexNumber);
 
   const mesh = new Mesh(geometry, material);
 
