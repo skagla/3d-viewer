@@ -42,6 +42,7 @@ import { Data, createSVG } from "./utils/create-borehole-svg";
 import { HillShadeProvider } from "./geo-three/HillShadeProvider";
 import { CustomMapNode } from "./geo-three/CustomMapNode";
 import { TextureType } from "./utils/TextureType";
+import { MappedFeature } from "./utils/MappedFeature";
 
 export type CustomEvent = CustomEventInit<{
   element: SVGSVGElement | null;
@@ -95,7 +96,7 @@ export class SceneView extends EventTarget {
     infoDiv: HTMLDivElement,
     infoName: HTMLDivElement,
     infoCitation: HTMLDivElement,
-    mappedFeatures: MappedFeature[],
+    mappedFeatures: MappedFeature[]
   ) {
     super();
     this._scene = scene;
@@ -115,11 +116,19 @@ export class SceneView extends EventTarget {
 
     //load Textures
     const textureLoader = new TextureLoader();
-    this._texture_empty = textureLoader.load("/3d-viewer/textures/white_texture.jpg");
+    this._texture_empty = textureLoader.load(
+      "/3d-viewer/textures/white_texture.jpg"
+    );
     this._texture_sand = textureLoader.load("/3d-viewer/textures/sand.jpg");
-    this._texture_schotter = textureLoader.load("/3d-viewer/textures/schotter.jpg");
-    this._texture_kalk = textureLoader.load("/3d-viewer/textures/kalk_5pt_bg-w.jpg");
-    this._texture_kristallin = textureLoader.load("/3d-viewer/textures/kristallin.jpg");
+    this._texture_schotter = textureLoader.load(
+      "/3d-viewer/textures/schotter.jpg"
+    );
+    this._texture_kalk = textureLoader.load(
+      "/3d-viewer/textures/kalk_5pt_bg-w.jpg"
+    );
+    this._texture_kristallin = textureLoader.load(
+      "/3d-viewer/textures/kristallin.jpg"
+    );
 
     this._texture_empty.colorSpace = SRGBColorSpace;
     this._texture_empty.wrapS = RepeatWrapping;
@@ -140,7 +149,6 @@ export class SceneView extends EventTarget {
     this._texture_kristallin.colorSpace = SRGBColorSpace;
     this._texture_kristallin.wrapS = RepeatWrapping;
     this._texture_kristallin.wrapT = RepeatWrapping;
-
   }
 
   static async create(container: HTMLElement, modelId: string) {
@@ -272,9 +280,7 @@ export class SceneView extends EventTarget {
       const intersectionObject = intersects[0];
 
       switch (this._raycastState) {
-
         case SceneView.RAYCAST_STATE_INFO:
-
           //loop through mappedFeatures and find the one with the same name we clicked on and set content of the info Div
           for (let index = 0; index < this._mappedFeatures.length; index++) {
             const mappedFeature = this._mappedFeatures[index];
@@ -300,17 +306,21 @@ export class SceneView extends EventTarget {
 
               // });
               if (mappedFeature.geologicdescription.citation != null)
-                _infoCitationLink.href = mappedFeature.geologicdescription.citation;
+                _infoCitationLink.href =
+                  mappedFeature.geologicdescription.citation;
 
               _infoCitationLink.innerText = "Citation";
               this._infoCitation.appendChild(_infoCitationLink);
               break;
             }
-
           }
           // this._infoDiv.textContent = intersectionObject.object.name;
 
-          this._infoLabel.position.set(intersectionObject.point.x, intersectionObject.point.y, intersectionObject.point.z);
+          this._infoLabel.position.set(
+            intersectionObject.point.x,
+            intersectionObject.point.y,
+            intersectionObject.point.z
+          );
           break;
 
         case SceneView.RAYCAST_STATE_VIRTUAL_PROFILE:
@@ -322,7 +332,6 @@ export class SceneView extends EventTarget {
     //nothing is clicked
     else {
       switch (this._raycastState) {
-
         case SceneView.RAYCAST_STATE_INFO:
           break;
       }
@@ -561,10 +570,7 @@ export class SceneView extends EventTarget {
     }
   }
 
-
-
-  textureMesh(useTexture: boolean, meshName: string, textureType: TextureType
-  ) {
+  textureMesh(useTexture: boolean, meshName: string, textureType: TextureType) {
     // Set textures for model
     const model = this._model;
     model.children.forEach((child) => {
@@ -635,7 +641,6 @@ export class SceneView extends EventTarget {
         const material = (child as Mesh).material as MeshStandardMaterial;
         material.color = color;
       }
-
     });
   }
 
@@ -678,16 +683,19 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
     zmax: pmax[2],
   };
 
-  const { renderer, labelRenderer, scene, camera, controls } = buildScene(container, extent);
+  const { renderer, labelRenderer, scene, camera, controls } = buildScene(
+    container,
+    extent
+  );
 
   // Start render loop
-  renderer.setAnimationLoop(animate(() => { }));
+  renderer.setAnimationLoop(animate(() => {}));
 
   // Build the 3D model
   const model = new Group();
   model.name = "geologic-model";
   scene.add(model);
-  await buildMeshes(mappedFeatures, model, scene);
+  await buildMeshes(mappedFeatures, model);
 
   // Add a coordinate grid to the scene
   const { gridHelper, annotations } = buildCoordinateGrid(extent);
@@ -708,7 +716,8 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   _infoDiv.className = "info-label";
   // _infoDiv.textContent = "TEST";
   // _infoDiv.style.color = "red";
-  _infoDiv.className = "p-5 border rounded border-gray-200 dark:border-gray-400 bg-white"
+  _infoDiv.className =
+    "p-5 border rounded border-gray-200 dark:border-gray-400 bg-white";
   //  _infoDiv.className="p-5 border border-gray-200 dark:border-gray-400 dark:bg-gray-700"
   //   _infoDiv.style.backgroundColor = "transparent";
 
@@ -725,13 +734,11 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   _infoCitation.style.backgroundColor = "transparent";
   _infoDiv.appendChild(_infoCitation);
 
-
   const _infoLabel = new CSS2DObject(_infoDiv);
   _infoLabel.position.set(0, 0, 0);
   _infoLabel.center.set(0, 0);
   // console.log(mappedFeatures);
   scene.add(_infoLabel);
-
 
   // Create a map tiles provider object
   const provider = new HillShadeProvider();
@@ -752,7 +759,7 @@ async function init(container: HTMLElement, modelId = MODEL_ID) {
   scene.add(map);
 
   // Update render loop to include topography
-  renderer.setAnimationLoop(animate(() => { }));
+  renderer.setAnimationLoop(animate(() => {}));
 
   return {
     scene,

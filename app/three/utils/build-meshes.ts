@@ -3,6 +3,7 @@ import { BufferAttribute, BufferGeometry, Group, Mesh, Color } from "three";
 import { fetchVertices, fetchTriangleIndices, transform } from "./utils";
 import { TRIANGLE_INDICES_URL, VERTICES_URL } from "../config";
 import { TriplanarShaderFactory } from "../materials/TriplanarShaderFactory";
+import { MappedFeature } from "./MappedFeature";
 
 export async function buildMeshes(
   mappedFeatures: MappedFeature[],
