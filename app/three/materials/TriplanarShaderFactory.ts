@@ -8,43 +8,57 @@ import {
 
 export function TriplanarShaderFactory(): MeshStandardMaterial {
   const textureLoader = new TextureLoader();
-  const _texture_sand = textureLoader.load("/3d-viewer/textures/white_texture.jpg");
+  const _texture_sand = textureLoader.load(
+    "/3d-viewer/textures/white_texture.jpg"
+  );
   _texture_sand.colorSpace = SRGBColorSpace;
   _texture_sand.wrapS = RepeatWrapping;
   _texture_sand.wrapT = RepeatWrapping;
 
   const material = new MeshStandardMaterial({
-    onBeforeCompile: (shader) => {
-      // vertexShader
-      shader.vertexShader = shader.vertexShader.replace(
-        'void main() {',
-    /*glsl*/`
+    metalness: 0.1,
+    roughness: 0.5,
+    flatShading: true,
+    side: DoubleSide,
+    wireframe: false,
+    // map: _texture_sand,
+    // color: new Color(1.0, 1.0, 0.0),
+    // color: new Color().set(color),
+  });
+
+  material.onBeforeCompile = (shader) => {
+    // vertexShader
+    shader.vertexShader = shader.vertexShader.replace(
+      "void main() {",
+      /*glsl*/ `
     varying vec3 vPosition;
     varying vec3 vNormal;
     void main() {
-	   `);
+	   `
+    );
 
-      shader.vertexShader = shader.vertexShader.replace(
-        '#include <color_vertex>',
-      /*glsl*/`
+    shader.vertexShader = shader.vertexShader.replace(
+      "#include <color_vertex>",
+      /*glsl*/ `
 	    #include <color_vertex>
 	     vPosition = position;
        vNormal = normal;
-      `);
+      `
+    );
 
-
-      // fragmentShader
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <common>',
-      /*glsl*/`
+    // fragmentShader
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <common>",
+      /*glsl*/ `
       #include <common>
       varying vec3 vPosition;
       varying vec3 vNormal;
-      `);
+      `
+    );
 
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <map_fragment>',
-    /*glsl*/  `
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <map_fragment>",
+      /*glsl*/ `
    
     float blendValue = 15.0;
     float tile = 0.0001;
@@ -64,25 +78,15 @@ export function TriplanarShaderFactory(): MeshStandardMaterial {
     
     diffuseColor *= blendedTextureColor;
     `
-      );
+    );
 
-      // console.log("vertexShader");
-      // console.log(shader.vertexShader);
-      // console.log("fragment");
-      // console.log(shader.fragmentShader);
-    },
+    // console.log("vertexShader");
+    // console.log(shader.vertexShader);
+    // console.log("fragment");
+    // console.log(shader.fragmentShader);
+  };
 
-    metalness: 0.1,
-    roughness: 0.5,
-    flatShading: true,
-    side: DoubleSide,
-    wireframe: false,
-    // map: _texture_sand,
-    // color: new Color(1.0, 1.0, 0.0),
-    // color: new Color().set(color),
-  });
   material.map = _texture_sand;
 
   return material;
 }
-
