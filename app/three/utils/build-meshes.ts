@@ -1,17 +1,15 @@
-import { BufferAttribute, BufferGeometry, Group, Mesh, Color, Scene } from "three";
+import { BufferAttribute, BufferGeometry, Group, Mesh, Color } from "three";
 
 import { fetchVertices, fetchTriangleIndices, transform } from "./utils";
 import { TRIANGLE_INDICES_URL, VERTICES_URL } from "../config";
 import { TriplanarShaderFactory } from "../materials/TriplanarShaderFactory";
 
-
 export async function buildMeshes(
   mappedFeatures: MappedFeature[],
-  model: Group,
-  scene: Scene
+  model: Group
 ) {
   for (const mappedFeature of mappedFeatures) {
-    const mesh = await buildMesh(mappedFeature, scene);
+    const mesh = await buildMesh(mappedFeature);
     if (mappedFeature.name === "Topography") {
       mesh.visible = false;
     }
@@ -20,7 +18,7 @@ export async function buildMeshes(
   }
 }
 
-async function buildMesh(layerData: MappedFeature, scene: Scene) {
+async function buildMesh(layerData: MappedFeature) {
   const color = `#${layerData.preview.legend_color}`;
   const name = layerData.preview.legend_text;
   const geomId = layerData.featuregeom_id.toString();
