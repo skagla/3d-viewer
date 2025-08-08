@@ -9,7 +9,6 @@ import {
   Raycaster,
   RepeatWrapping,
   Scene,
-  ShaderMaterial,
   SphereGeometry,
   SRGBColorSpace,
   Texture,
@@ -368,9 +367,8 @@ export class SceneView extends EventTarget {
         }
         const name = intersects[i].object.name;
         const color = `#${(
-          ((intersects[i].object as Mesh).material as ShaderMaterial).uniforms
-            .color.value as Color
-        ).getHexString()}`;
+          (intersects[i].object as Mesh).material as MeshStandardMaterial
+        ).color.getHexString()}`;
 
         // Update depthEnd when name is the same
         const index = data.length === 0 ? 0 : data.length - 1;
